@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@synthkit/api": ["apps/api/src/index.ts"],
+      "@synthkit/cli": ["apps/cli/src/index.ts"],
+      "@synthkit/core": ["packages/core/src/index.ts"],
+      "@synthkit/domain": ["packages/domain/src/index.ts"],
+      "@synthkit/evals": ["packages/evals/src/index.ts"],
+      "@synthkit/ingest": ["packages/ingest/src/index.ts"],
+      "@synthkit/mcp": ["apps/mcp/src/index.ts"],
+      "@synthkit/providers": ["packages/providers/src/index.ts"],
+      "@synthkit/sdk-ts": ["packages/sdk-ts/src/index.ts"],
+      "@synthkit/shared": ["packages/shared/src/index.ts"],
+      "@synthkit/storage": ["packages/storage/src/index.ts"]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist"
+  }
+}

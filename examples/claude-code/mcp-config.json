@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "synthkit": {
+      "command": "./pnpm",
+      "args": ["exec", "synthkit", "serve", "mcp"],
+      "env": {
+        "SYNTHKIT_HOME": "./.synthkit"
+      }
+    }
+  }
+}

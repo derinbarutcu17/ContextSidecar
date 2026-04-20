@@ -1,0 +1,4 @@
+Deck outline input:
+The story should move from messy input to trustworthy synthesis.
+We need clear evidence mapping and revision history.
+Confidence must be explicit and honest.

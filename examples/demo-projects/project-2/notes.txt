@@ -1,0 +1,3 @@
+Decision memo candidate:
+Use one sharp wedge before adding collaboration or auth.
+Do not promise streamable HTTP if it is not implemented.

@@ -1,0 +1,30 @@
+{
+  "name": "context-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:mcp": "./pnpm --filter @synthkit/mcp test",
+    "test:cli": "./pnpm --filter @synthkit/cli test",
+    "test:e2e": "./pnpm --filter @synthkit/api test:e2e",
+    "eval": "./pnpm --filter @synthkit/evals test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "check": "./pnpm exec context-sidecar doctor --json",
+    "demo": "./pnpm exec context-sidecar doctor --json",
+    "serve:mcp": "./pnpm exec context-sidecar serve mcp",
+    "serve:api": "./pnpm exec context-sidecar serve api",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "@synthkit/cli": "workspace:*",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "tsx": "^4.20.6"
+  }
+}

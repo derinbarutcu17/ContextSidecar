@@ -1,0 +1,2 @@
+The product should support local HTTP, MCP, and SDK workflows.
+The UI is optional and should not own the architecture.

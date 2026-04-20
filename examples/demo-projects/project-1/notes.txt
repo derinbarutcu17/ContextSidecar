@@ -1,0 +1,3 @@
+We need a brief about the local-first synthesis engine.
+MCP and CLI are required immediately.
+The web UI can be deferred.

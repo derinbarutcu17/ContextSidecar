@@ -1,0 +1,3 @@
+[00:02] Build the core engine first.
+[00:08] Keep clients thin.
+[00:12] Preserve citations and contradictions.
