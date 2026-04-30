@@ -58,6 +58,21 @@ Generated At: <timestamp>
 
 Empty sections are omitted.
 
+## Conceptual architecture
+
+The diagram below is a conceptual architecture based on the current repo structure.
+
+```mermaid
+flowchart LR
+    U[User / Agent] --> I[CLI / Local API / MCP interface]
+    I --> S[Context store]
+    S --> N[Structured notes]
+    S --> P[Pinned instructions]
+    N --> C[Compact context pack]
+    P --> C
+    C --> W[Downstream AI coding or writing workflow]
+```
+
 ## Quick Start
 
 ```bash
