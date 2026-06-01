@@ -15,7 +15,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "check": "./pnpm exec context-sidecar doctor --json",
-    "demo": "./pnpm exec context-sidecar doctor --json",
+    "demo": "./pnpm exec context-sidecar demo --json",
     "serve:mcp": "./pnpm exec context-sidecar serve mcp",
     "serve:api": "./pnpm exec context-sidecar serve api",
     "clean": "turbo run clean"

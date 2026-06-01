@@ -282,7 +282,7 @@ program.command("context").description("Manage local-first context sidecar items
   .addCommand(new Command("update").requiredOption("--id <id>").option("--content <content>").option("--priority <priority>").option("--status <status>").option("--expires-at <expiresAt>").option("--tag <tags...>").action(async function (this: Command) {
     const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean | undefined>;
     const service = createContextSidecarService(String(opts.root));
-    try { output(service.updateItem(String(opts.id), { ...(opts.content ? { content: String(opts.content) } : {}), ...(opts.priority ? { priority: Number(opts.priority) } : {}), ...(opts.status ? { status: String(opts.status) as any } : {}), ...(opts.expiresAt ? { expires_at: String(opts.expiresAt) } : {}), ...(opts.tag ? { tags: opts.tag as string[] } : {}) }), Boolean(opts.json)); } finally { service.storage.close(); }
+    try { output(service.updateItem(String(opts.id), { ...(opts.content !== undefined ? { content: String(opts.content) } : {}), ...(opts.priority !== undefined ? { priority: Number(opts.priority) } : {}), ...(opts.status !== undefined ? { status: String(opts.status) as any } : {}), ...(opts.expiresAt !== undefined ? { expires_at: String(opts.expiresAt) } : {}), ...(opts.tag !== undefined ? { tags: opts.tag as string[] } : {}) }), Boolean(opts.json)); } finally { service.storage.close(); }
   }))
   .addCommand(new Command("get").requiredOption("--id <id>").action(async function (this: Command) {
     const opts = this.optsWithGlobals() as Record<string, string | boolean>; const service = createContextSidecarService(String(opts.root));
@@ -296,9 +296,9 @@ program.command("context").description("Manage local-first context sidecar items
     const opts = this.optsWithGlobals() as Record<string, string | boolean>; const service = createContextSidecarService(String(opts.root));
     try { output(service.searchItems({ namespace: String(opts.namespace), query: String(opts.query), ...(opts.itemType ? { item_type: String(opts.itemType) as any } : {}), ...(opts.status ? { status: String(opts.status) as any } : {}) }), Boolean(opts.json)); } finally { service.storage.close(); }
   }))
-  .addCommand(new Command("pack").requiredOption("--namespace <namespace>").option("--task-query <taskQuery>").option("--max-items <maxItems>").option("--include-type <types...>").action(async function (this: Command) {
+  .addCommand(new Command("pack").requiredOption("--namespace <namespace>").option("--task-query <taskQuery>").option("--max-items <maxItems>").option("--include-type <types...>").option("--include-archived", "include archived items in the pack", false).action(async function (this: Command) {
     const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean>; const service = createContextSidecarService(String(opts.root));
-    try { output(service.buildContextPack({ namespace: String(opts.namespace), task_query: opts.taskQuery ? String(opts.taskQuery) : null, max_items: opts.maxItems ? Number(opts.maxItems) : null, include_types: (opts.includeType as string[] | undefined)?.map((value) => value as any) ?? null, exclude_archived: true, now: null }), Boolean(opts.json)); } finally { service.storage.close(); }
+    try { output(service.buildContextPack({ namespace: String(opts.namespace), task_query: opts.taskQuery ? String(opts.taskQuery) : null, max_items: opts.maxItems ? Number(opts.maxItems) : null, include_types: (opts.includeType as string[] | undefined)?.map((value) => value as any) ?? null, exclude_archived: !Boolean(opts.includeArchived), now: null }), Boolean(opts.json)); } finally { service.storage.close(); }
   }))
   .addCommand(new Command("archive").requiredOption("--id <id>").action(async function (this: Command) {
     const opts = this.optsWithGlobals() as Record<string, string | boolean>; const service = createContextSidecarService(String(opts.root));
