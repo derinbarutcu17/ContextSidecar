@@ -5,19 +5,17 @@
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",
     "test:mcp": "./pnpm --filter @context-sidecar/mcp test",
     "test:cli": "./pnpm --filter @context-sidecar/cli test",
     "test:e2e": "./pnpm --filter @context-sidecar/api test:e2e",
-    "eval": "./pnpm --filter @context-sidecar/evals test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "check": "./pnpm exec context-sidecar doctor --json",
-    "demo": "./pnpm exec context-sidecar demo --json",
     "serve:mcp": "./pnpm exec context-sidecar serve mcp",
     "serve:api": "./pnpm exec context-sidecar serve api",
+    "context": "./pnpm exec context-sidecar context",
     "clean": "turbo run clean"
   },
   "devDependencies": {

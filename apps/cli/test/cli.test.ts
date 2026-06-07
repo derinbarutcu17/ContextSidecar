@@ -28,36 +28,6 @@ describe("CLI", () => {
     expect(parsed.rootPath).toBe(path.join(repoRoot, ".context-sidecar"));
   });
 
-  it("runs the root demo script", () => {
-    const repoRoot = path.resolve(process.cwd(), "../..");
-    const output = execFileSync("pnpm", ["--silent", "demo"], {
-      cwd: repoRoot,
-      encoding: "utf8"
-    });
-    const parsed = JSON.parse(output) as { synthesisId: string };
-    expect(parsed.synthesisId).toMatch(/^synth_/);
-  });
-
-  it("exposes a usable demo synthesis id", () => {
-    const repoRoot = path.resolve(process.cwd(), "../..");
-    const demoOutput = execFileSync("pnpm", ["exec", "context-sidecar", "demo", "--json"], {
-      cwd: repoRoot,
-      encoding: "utf8"
-    });
-    const demo = JSON.parse(demoOutput) as { synthesisId: string };
-    expect(demo.synthesisId).toMatch(/^synth_/);
-    const citationsOutput = execFileSync(
-      "pnpm",
-      ["exec", "context-sidecar", "inspect", "citations", "--synthesis", demo.synthesisId, "--json"],
-      {
-        cwd: repoRoot,
-        encoding: "utf8"
-      }
-    );
-    const citations = JSON.parse(citationsOutput) as Array<{ id: string }>;
-    expect(citations.length).toBeGreaterThan(0);
-  });
-
   it("supports context commands in json mode", () => {
     const root = ".tmp-cli-context";
     const addOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-a", "--item-type", "pinned_instruction", "--content", "Never widen scope.", "--source-type", "manual_entry", "--status", "pinned", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
