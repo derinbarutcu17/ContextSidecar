@@ -56,7 +56,7 @@ export interface McpServerOptions {
 }
 
 export const createMcpServer = (options: McpServerOptions = {}) => {
-  const rootPath = options.rootPath ?? process.env.SYNTHKIT_HOME ?? path.join(process.cwd(), ".synthkit");
+  const rootPath = options.rootPath ?? process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar");
   const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : parseProviderEnv();
   const engine = new SynthKitEngine({ rootPath, provider });
   const contextService = createContextSidecarService(rootPath);

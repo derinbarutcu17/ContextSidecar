@@ -185,7 +185,7 @@ export class SynthKitEngine {
       updatedAt: now(),
       storage: {
         rootPath: this.rootPath,
-        databasePath: path.join(this.rootPath, "synthkit.sqlite")
+        databasePath: path.join(this.rootPath, "context-sidecar.sqlite")
       },
       settings: {
         defaultMode: input.defaultMode ?? "brief",

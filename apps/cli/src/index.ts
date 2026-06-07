@@ -9,18 +9,18 @@ import { z } from "zod";
 
 const program = new Command();
 program.name("context-sidecar").description("Local-first agent context sidecar").version("0.1.0");
-program.option("--root <path>", "workspace root path", process.env.SYNTHKIT_HOME ?? path.join(process.cwd(), ".synthkit"));
+program.option("--root <path>", "workspace root path", process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar"));
 program.option("--json", "emit JSON only", false);
 
 const rootPathOption = (cmd: Command) =>
-  cmd.option("--root <path>", "workspace root path", process.env.SYNTHKIT_HOME ?? path.join(process.cwd(), ".synthkit"));
+  cmd.option("--root <path>", "workspace root path", process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar"));
 
 const jsonOption = (cmd: Command) => cmd.option("--json", "emit JSON only", false);
 
 const providerFromEnv = () => {
-  const kind = process.env.SYNTHKIT_PROVIDER_KIND ?? "mock";
+  const kind = process.env.CONTEXT_SIDECAR_PROVIDER_KIND ?? "mock";
   if (kind === "mock") {
-    return ProviderConfigSchema.parse({ kind: "mock", seed: process.env.SYNTHKIT_PROVIDER_SEED ?? "mock" });
+    return ProviderConfigSchema.parse({ kind: "mock", seed: process.env.CONTEXT_SIDECAR_PROVIDER_SEED ?? "mock" });
   }
   if (kind === "openai") {
     return ProviderConfigSchema.parse({
@@ -73,7 +73,7 @@ program
   .command("init")
   .description("Initialize a workspace and print the default project path")
   .action(() => {
-    const rootPath = process.env.SYNTHKIT_HOME ?? path.join(process.cwd(), ".synthkit");
+    const rootPath = process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar");
     fs.mkdirSync(rootPath, { recursive: true });
     output({ ok: true, rootPath });
   });
@@ -321,7 +321,7 @@ program
       rootPath: opts.root,
       node: process.version,
       manifest,
-      storageExists: fs.existsSync(path.join(opts.root, "synthkit.sqlite"))
+      storageExists: fs.existsSync(path.join(opts.root, "context-sidecar.sqlite"))
     };
     output(result, opts.json ?? false);
     engine.close();

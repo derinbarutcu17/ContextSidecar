@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "synthkit": {
+    "context-sidecar": {
       "command": "./pnpm",
-      "args": ["exec", "synthkit", "serve", "mcp"],
+      "args": ["exec", "context-sidecar", "serve", "mcp"],
       "env": {
-        "SYNTHKIT_HOME": "./.synthkit"
+        "CONTEXT_SIDECAR_HOME": "./.context-sidecar"
       }
     }
   }

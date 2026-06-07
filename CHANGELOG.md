@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Initial SynthKit scaffold
+- Initial ContextSidecar scaffold
 - versioned contracts
 - core engine and thin protocol surfaces
 - OpenAPI derived from the shared route registry

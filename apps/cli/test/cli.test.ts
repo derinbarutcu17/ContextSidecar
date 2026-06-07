@@ -18,14 +18,14 @@ describe("CLI", () => {
 
   it("runs through the repo-root binary path", () => {
     const repoRoot = path.resolve(process.cwd(), "../..");
-    fs.rmSync(path.join(repoRoot, ".synthkit"), { recursive: true, force: true });
+    fs.rmSync(path.join(repoRoot, ".context-sidecar"), { recursive: true, force: true });
     const output = execFileSync("pnpm", ["exec", "context-sidecar", "doctor", "--json"], {
       cwd: repoRoot,
       encoding: "utf8"
     });
     const parsed = JSON.parse(output);
     expect(parsed.ok).toBe(true);
-    expect(parsed.rootPath).toBe(path.join(repoRoot, ".synthkit"));
+    expect(parsed.rootPath).toBe(path.join(repoRoot, ".context-sidecar"));
   });
 
   it("runs the root demo script", () => {

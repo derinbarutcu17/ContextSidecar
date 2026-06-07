@@ -674,5 +674,5 @@ export class SynthKitStorage {
   }
 }
 
-export const createStorage = (rootPath: string, databasePath = path.join(rootPath, "synthkit.sqlite")) =>
+export const createStorage = (rootPath: string, databasePath = path.join(rootPath, "context-sidecar.sqlite")) =>
   new SynthKitStorage({ rootPath, databasePath });

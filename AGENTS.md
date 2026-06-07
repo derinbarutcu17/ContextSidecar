@@ -1,7 +1,7 @@
-# SynthKit Workspace Notes
+# ContextSidecar Workspace Notes
 
-- Keep the core engine protocol-agnostic.
+- Keep the context store protocol-agnostic (CLI, HTTP, MCP).
 - Clients must remain thin.
 - Schemas are the contract.
-- Prefer inspectable stages over giant prompts.
+- Prefer deterministic ranking over magic.
 - Do not let the web UI become the architecture.

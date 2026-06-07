@@ -1,6 +1,6 @@
 # Contributing
 
-SynthKit is optimized for boring reliability.
+ContextSidecar is optimized for boring reliability.
 
 ## Ground rules
 

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createContextSidecarService } from "@synthkit/core";
 
-const rootPath = path.join(process.cwd(), ".synthkit-evals");
+const rootPath = path.join(process.cwd(), ".context-sidecar-evals");
 
 const fixtureItems = [
   { namespace: "project:job-sniper", item_type: "pinned_instruction", content: "Keep scope tight and prefer inspectable local behavior.", source_type: "manual_entry", status: "pinned", priority: 100 },
