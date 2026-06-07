@@ -81,6 +81,7 @@ export const createMcpServer = (options: McpServerOptions = {}) => {
       { name: "context_update", description: "Update a context item", inputSchema: { type: "object" } },
       { name: "context_get", description: "Get a context item", inputSchema: { type: "object" } },
       { name: "context_list", description: "List context items for a namespace", inputSchema: { type: "object" } },
+      { name: "context_list_namespaces", description: "List known namespaces and counts", inputSchema: { type: "object" } },
       { name: "context_search", description: "Search context items in a namespace", inputSchema: { type: "object" } },
       { name: "context_pack", description: "Build a compact context pack", inputSchema: { type: "object" } },
       { name: "context_archive", description: "Archive a context item", inputSchema: { type: "object" } },
@@ -116,6 +117,13 @@ export const createMcpServer = (options: McpServerOptions = {}) => {
         case "context_list": {
           const body = z.object({ namespace: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]).optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional(), tag: z.string().optional() }).parse(args ?? {});
           return textResult(contextService.listItems({ namespace: body.namespace, ...(body.item_type !== undefined ? { item_type: body.item_type } : {}), ...(body.status !== undefined ? { status: body.status } : {}), ...(body.tag !== undefined ? { tag: body.tag } : {}) }));
+        }
+        case "context_list_namespaces": {
+          const body = z.object({ now: z.string().datetime({ offset: true }).optional() }).parse(args ?? {});
+          if (body.now !== undefined) {
+            return textResult(contextService.listNamespaces({ now: body.now }));
+          }
+          return textResult(contextService.listNamespaces());
         }
         case "context_search": {
           const body = z.object({ namespace: z.string().min(1), query: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]).optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional() }).parse(args ?? {});

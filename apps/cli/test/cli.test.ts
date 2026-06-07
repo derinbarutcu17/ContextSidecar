@@ -39,6 +39,16 @@ describe("CLI", () => {
     expect(pack.rendered_text).toContain("[Pinned Instructions]");
   });
 
+  it("lists namespaces in json mode", () => {
+    const root = ".tmp-cli-namespaces";
+    execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-a", "--item-type", "pinned_instruction", "--content", "One.", "--source-type", "manual_entry", "--status", "pinned", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-b", "--item-type", "workflow_note", "--content", "Two.", "--source-type", "manual_entry", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const namespacesOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "namespaces", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const namespaces = JSON.parse(namespacesOutput) as Array<{ namespace: string; item_count: number }>;
+    expect(namespaces.map((entry) => entry.namespace)).toEqual(["project:repo-b", "project:repo-a"]);
+    expect(namespaces[0]?.item_count).toBeGreaterThan(0);
+  });
+
   it("allows updating priority to zero", () => {
     const root = ".tmp-cli-update-zero";
     const addOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-a", "--item-type", "task_note", "--content", "Lower priority item.", "--source-type", "manual_entry", "--priority", "5", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });

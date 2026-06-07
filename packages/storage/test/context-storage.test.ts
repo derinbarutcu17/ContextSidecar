@@ -52,4 +52,34 @@ describe("context storage", () => {
     expect(storage.listContextItems({ namespace: "project:repo-a", status: "expired", now: "2026-04-21T09:00:00.000Z" }).map((item) => item.id)).toEqual(["ctx_2"]);
     storage.close();
   });
+
+  it("summarizes namespaces with counts and recency", () => {
+    const storage = createTempStorage();
+    storage.createContextItem({ id: "ctx_1", namespace: "project:repo-a", item_type: "preference", content: "Pref", source_type: "manual_entry", source_reference: null, priority: 1, status: "active", created_at: "2026-04-21T08:00:00.000Z", updated_at: "2026-04-21T08:00:00.000Z", expires_at: null, tags: ["style"], metadata: {} });
+    storage.createContextItem({ id: "ctx_2", namespace: "project:repo-a", item_type: "workflow_note", content: "Pinned", source_type: "manual_entry", source_reference: null, priority: 2, status: "pinned", created_at: "2026-04-21T09:00:00.000Z", updated_at: "2026-04-21T09:00:00.000Z", expires_at: null, tags: ["process"], metadata: {} });
+    storage.createContextItem({ id: "ctx_3", namespace: "project:repo-a", item_type: "task_note", content: "Expired", source_type: "manual_entry", source_reference: null, priority: 0, status: "active", created_at: "2026-04-20T08:00:00.000Z", updated_at: "2026-04-20T08:00:00.000Z", expires_at: "2026-04-20T09:00:00.000Z", tags: [], metadata: {} });
+    storage.createContextItem({ id: "ctx_4", namespace: "project:repo-b", item_type: "workflow_note", content: "Other", source_type: "manual_entry", source_reference: null, priority: 2, status: "archived", created_at: "2026-04-21T10:00:00.000Z", updated_at: "2026-04-21T10:00:00.000Z", expires_at: null, tags: ["process"], metadata: {} });
+
+    expect(storage.listContextNamespaces("2026-04-21T11:00:00.000Z")).toEqual([
+      {
+        namespace: "project:repo-b",
+        item_count: 1,
+        active_count: 0,
+        pinned_count: 0,
+        archived_count: 1,
+        expired_count: 0,
+        latest_updated_at: "2026-04-21T10:00:00.000Z"
+      },
+      {
+        namespace: "project:repo-a",
+        item_count: 3,
+        active_count: 1,
+        pinned_count: 1,
+        archived_count: 0,
+        expired_count: 1,
+        latest_updated_at: "2026-04-21T09:00:00.000Z"
+      }
+    ]);
+    storage.close();
+  });
 });

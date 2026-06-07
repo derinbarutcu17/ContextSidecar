@@ -8,7 +8,7 @@ import {
   type ContextPackRequestV1,
   nowIso
 } from "@context-sidecar/domain";
-import { createStorage, type CreateContextItemInput, type SearchContextItemsFilters, type SynthKitStorage, type UpdateContextItemInput } from "@context-sidecar/storage";
+import { createStorage, type ContextNamespaceSummaryV1, type CreateContextItemInput, type SearchContextItemsFilters, type SynthKitStorage, type UpdateContextItemInput } from "@context-sidecar/storage";
 import { sha256 } from "@context-sidecar/shared";
 
 const DEFAULT_MAX_ITEMS = 8;
@@ -58,6 +58,7 @@ export interface AddContextItemInput {
 export interface ListItemsInput { namespace: string; item_type?: ContextItemType; status?: ContextItemV1["status"]; tag?: string; include_archived?: boolean; now?: string | null; }
 export interface SearchItemsInput { namespace: string; query: string; item_type?: ContextItemType; status?: ContextItemV1["status"]; include_archived?: boolean; now?: string | null; }
 export interface UpdateItemInput { content?: string; priority?: number; status?: ContextItemV1["status"]; expires_at?: string | null; tags?: string[]; metadata?: Record<string, unknown>; }
+export interface ListNamespacesInput { now?: string | null; }
 
 export class ContextSidecarService {
   constructor(readonly storage: SynthKitStorage) {}
@@ -76,6 +77,9 @@ export class ContextSidecarService {
     return updated;
   }
   getItem(id: string) { const item = this.storage.getContextItem(id); if (!item) throw new Error(`Context item not found: ${id}`); return item; }
+  listNamespaces(input: ListNamespacesInput = {}): ContextNamespaceSummaryV1[] {
+    return this.storage.listContextNamespaces(input.now ?? nowIso());
+  }
   listItems(input: ListItemsInput) {
     return this.storage.listContextItems({ namespace: input.namespace, ...(input.item_type ? { item_type: input.item_type } : {}), ...(input.status ? { status: input.status } : {}), ...(input.tag ? { tag: input.tag } : {}), includeArchived: input.include_archived ?? false, ...(input.now ? { now: input.now } : {}) });
   }

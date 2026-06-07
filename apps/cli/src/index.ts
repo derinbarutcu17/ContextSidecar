@@ -137,6 +137,13 @@ program.command("context").description("Manage local-first context sidecar items
     const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean>; const service = createContextSidecarService(String(opts.root));
     try { output(service.buildContextPack({ namespace: String(opts.namespace), task_query: opts.taskQuery ? String(opts.taskQuery) : null, max_items: opts.maxItems ? Number(opts.maxItems) : null, include_types: (opts.includeType as string[] | undefined)?.map((value) => value as any) ?? null, exclude_archived: !Boolean(opts.includeArchived), now: null }), Boolean(opts.json)); } finally { service.storage.close(); }
   }))
+  .addCommand(new Command("namespaces").option("--now <now>").action(async function (this: Command) {
+    const opts = this.optsWithGlobals() as Record<string, string | boolean>; const service = createContextSidecarService(String(opts.root));
+    try {
+      const namespaces = opts.now ? service.listNamespaces({ now: String(opts.now) }) : service.listNamespaces();
+      output(namespaces, Boolean(opts.json));
+    } finally { service.storage.close(); }
+  }))
   .addCommand(new Command("archive").requiredOption("--id <id>").action(async function (this: Command) {
     const opts = this.optsWithGlobals() as Record<string, string | boolean>; const service = createContextSidecarService(String(opts.root));
     try { output(service.archiveItem(String(opts.id)), Boolean(opts.json)); } finally { service.storage.close(); }

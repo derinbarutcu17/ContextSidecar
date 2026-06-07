@@ -117,6 +117,16 @@ export interface SearchContextItemsFilters {
   now?: string;
 }
 
+export interface ContextNamespaceSummaryV1 {
+  namespace: string;
+  item_count: number;
+  active_count: number;
+  pinned_count: number;
+  archived_count: number;
+  expired_count: number;
+  latest_updated_at: string;
+}
+
 const ensureDir = (dir: string) => fs.mkdirSync(dir, { recursive: true });
 
 const initSqlite = (db: SqliteDb) => {
@@ -640,6 +650,47 @@ export class SynthKitStorage {
   getContextItem(id: string) {
     const row = this.db.prepare(`SELECT data FROM context_items WHERE id = ?`).get(id) as { data?: string } | undefined;
     return row?.data ? ContextItemV1Schema.parse(parseJson(row.data)) : undefined;
+  }
+
+  listContextNamespaces(now = nowIso()): ContextNamespaceSummaryV1[] {
+    const rows = this.db.prepare(`
+      WITH namespace_rows AS (
+        SELECT
+          namespace,
+          CASE WHEN expires_at IS NOT NULL AND expires_at <= @now THEN 'expired' ELSE status END AS effective_status,
+          updated_at
+        FROM context_items
+      )
+      SELECT
+        namespace,
+        COUNT(*) AS item_count,
+        SUM(CASE WHEN effective_status = 'active' THEN 1 ELSE 0 END) AS active_count,
+        SUM(CASE WHEN effective_status = 'pinned' THEN 1 ELSE 0 END) AS pinned_count,
+        SUM(CASE WHEN effective_status = 'archived' THEN 1 ELSE 0 END) AS archived_count,
+        SUM(CASE WHEN effective_status = 'expired' THEN 1 ELSE 0 END) AS expired_count,
+        MAX(updated_at) AS latest_updated_at
+      FROM namespace_rows
+      GROUP BY namespace
+      ORDER BY latest_updated_at DESC, namespace ASC
+    `).all({ now }) as Array<{
+      namespace: string;
+      item_count: number;
+      active_count: number;
+      pinned_count: number;
+      archived_count: number;
+      expired_count: number;
+      latest_updated_at: string;
+    }>;
+
+    return rows.map((row) => ({
+      namespace: row.namespace,
+      item_count: Number(row.item_count ?? 0),
+      active_count: Number(row.active_count ?? 0),
+      pinned_count: Number(row.pinned_count ?? 0),
+      archived_count: Number(row.archived_count ?? 0),
+      expired_count: Number(row.expired_count ?? 0),
+      latest_updated_at: row.latest_updated_at
+    }));
   }
 
   listContextItems(filters: ListContextItemsFilters) {

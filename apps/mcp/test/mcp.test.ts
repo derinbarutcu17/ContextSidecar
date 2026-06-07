@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
+import fs from "node:fs";
 
 describe("MCP server", () => {
   afterAll(() => undefined);
@@ -80,5 +81,21 @@ describe("MCP server", () => {
     expect(packed.items[0]?.id).toBe(createdItem.id);
     expect(packed.rendered_text).toContain("[Context Pack]");
     await client.close();
+  });
+
+  it("lists namespaces through MCP", async () => {
+    const root = path.join(process.cwd(), ".tmp-mcp-namespaces");
+    fs.rmSync(root, { recursive: true, force: true });
+    const client = new Client({ name: "test", version: "0.1.0" });
+    const transport = new StdioClientTransport({ command: "node", args: ["--conditions=source", "--import", "tsx", path.join(process.cwd(), "src/index.ts"), "--root", root], cwd: process.cwd() });
+    await client.connect(transport);
+    await client.callTool({ name: "context_add", arguments: { namespace: "project:repo-a", item_type: "pinned_instruction", content: "One.", source_type: "manual_entry", status: "pinned" } });
+    await client.callTool({ name: "context_add", arguments: { namespace: "project:repo-b", item_type: "workflow_note", content: "Two.", source_type: "manual_entry" } });
+    const namespaces = (await client.callTool({ name: "context_list_namespaces", arguments: { now: "2026-04-21T12:00:00.000Z" } })) as { content: Array<{ text: string }> };
+    const parsed = JSON.parse(namespaces.content[0]?.text ?? "[]") as Array<{ namespace: string; item_count: number }>;
+    expect(parsed.map((entry) => entry.namespace)).toEqual(["project:repo-b", "project:repo-a"]);
+    expect(parsed[0]?.item_count).toBeGreaterThan(0);
+    await client.close();
+    fs.rmSync(root, { recursive: true, force: true });
   });
 });

@@ -99,6 +99,7 @@ All context commands support `--json`.
   --json
 
 ./pnpm exec context-sidecar context list --namespace project:repo-a --json
+./pnpm exec context-sidecar context namespaces --json
 ./pnpm exec context-sidecar context search --namespace project:repo-a --query "scope" --json
 ./pnpm exec context-sidecar context pack --namespace project:repo-a --task-query "scope" --json
 ./pnpm exec context-sidecar context get --id <context-id> --json
