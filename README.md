@@ -83,6 +83,7 @@ flowchart LR
 ./pnpm install
 ./pnpm typecheck
 ./pnpm test
+./pnpm bootstrap
 ```
 
 ## CLI
@@ -106,6 +107,14 @@ All context commands support `--json`.
 ./pnpm exec context-sidecar context update --id <context-id> --priority 50 --json
 ./pnpm exec context-sidecar context archive --id <context-id> --json
 ./pnpm exec context-sidecar context pin --id <context-id> --json
+./pnpm exec context-sidecar context summary --json
+./pnpm exec context-sidecar context bootstrap repo --json
+
+./pnpm exec context-sidecar context import markdown \
+  --namespace project:repo-a \
+  --input ../Docs ../Utilities/memory \
+  --item-type project_fact \
+  --json
 ```
 
 ## HTTP API
@@ -155,6 +164,7 @@ Available v1 tools:
 ./pnpm typecheck
 ./pnpm test
 ./pnpm eval
+./pnpm demo
 ```
 
 ## What V1 Does Not Do

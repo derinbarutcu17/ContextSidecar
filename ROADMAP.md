@@ -8,6 +8,8 @@
 - Context pack with deterministic ranking
 - Context CRUD (add, update, get, list, search)
 - Archive / pin lifecycle
+- Batch context import from markdown files
+- Workspace summary and repo bootstrap commands
 - Eval suite for pack correctness
 - CI pipeline and release hygiene
 
@@ -15,7 +17,6 @@
 
 - Namespace-aware Hermes Agent hooks (auto-pull context on session start)
 - ANSI / rich terminal rendering
-- Batch context import from markdown files
 - `context sidecar migrate` for schema upgrades
 - Homebrew tap / install script
 
