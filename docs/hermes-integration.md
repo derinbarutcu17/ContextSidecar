@@ -12,13 +12,13 @@ From the repo root:
 ./pnpm serve:mcp
 ```
 
-Or directly:
+Or via the Hermes launcher script:
 
 ```bash
-./pnpm exec context-sidecar serve mcp
+./scripts/serve-hermes.sh
 ```
 
-The MCP server listens on **stdio** (for `native_mcp` subprocess mode). No HTTP port needed.
+The MCP server listens on **stdio** for `native_mcp` subprocess mode, so no HTTP port is needed.
 
 ### 2. Add to Hermes config
 
@@ -29,15 +29,11 @@ native_mcp:
   enabled: true
   servers:
     context-sidecar:
-      command: /Users/derin/Desktop/CODING/Projects/ContextSidecar/pnpm
-      args:
-        - --filter
-        - "@synthkit/mcp"
-        - exec
-        - context-sidecar-mcp
+      command: /Users/derin/Desktop/CODING/Projects/ContextSidecar/scripts/serve-hermes.sh
+      args: []
 ```
 
-> **Note:** If you've built the package (`./pnpm build`), you can also run the compiled binary directly:
+> **Note:** If you've built the package, you can also run the compiled binary directly:
 > ```yaml
 >       command: /Users/derin/Desktop/CODING/Projects/ContextSidecar/apps/mcp/bin/context-sidecar-mcp.js
 >       args: []
@@ -94,7 +90,7 @@ Start by adding items you want every Hermes session to see:
 ## Testing the integration
 
 ```bash
-# In Herman session, ask the agent:
+# In a Hermes session, ask the agent:
 # "Pull context from my default namespace"
 # Or use the context pack endpoint:
 ./pnpm exec context-sidecar context pack --namespace default --task-query "what am I working on"
