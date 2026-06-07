@@ -1,5 +1,5 @@
 {
-  "name": "@synthkit/mcp",
+  "name": "@context-sidecar/mcp",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -25,9 +25,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
-    "@synthkit/core": "workspace:*",
-    "@synthkit/domain": "workspace:*",
-    "@synthkit/providers": "workspace:*",
+    "@context-sidecar/core": "workspace:*",
+    "@context-sidecar/domain": "workspace:*",
+    "@context-sidecar/providers": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

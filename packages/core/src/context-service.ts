@@ -7,9 +7,9 @@ import {
   type ContextPackEntryV1,
   type ContextPackRequestV1,
   nowIso
-} from "@synthkit/domain";
-import { createStorage, type CreateContextItemInput, type SearchContextItemsFilters, type SynthKitStorage, type UpdateContextItemInput } from "@synthkit/storage";
-import { sha256 } from "@synthkit/shared";
+} from "@context-sidecar/domain";
+import { createStorage, type CreateContextItemInput, type SearchContextItemsFilters, type SynthKitStorage, type UpdateContextItemInput } from "@context-sidecar/storage";
+import { sha256 } from "@context-sidecar/shared";
 
 const DEFAULT_MAX_ITEMS = 8;
 const SECTION_TITLES: Record<ContextItemType, string> = {

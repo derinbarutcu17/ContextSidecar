@@ -13,8 +13,8 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
-import { createContextSidecarService, SynthKitEngine } from "@synthkit/core";
-import { ProviderConfigSchema } from "@synthkit/providers";
+import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
+import { ProviderConfigSchema } from "@context-sidecar/providers";
 import { z } from "zod";
 
 const ProjectCreateSchema = z.object({

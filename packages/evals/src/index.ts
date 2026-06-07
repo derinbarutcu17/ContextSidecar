@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createContextSidecarService } from "@synthkit/core";
+import { createContextSidecarService } from "@context-sidecar/core";
 
 const rootPath = path.join(process.cwd(), ".context-sidecar-evals");
 

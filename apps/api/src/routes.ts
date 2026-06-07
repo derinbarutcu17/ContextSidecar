@@ -11,7 +11,7 @@ import {
   ProjectV1Schema,
   RevisionV1Schema,
   SynthesisModeV1Schema
-} from "@synthkit/domain";
+} from "@context-sidecar/domain";
 
 const ResponseEnvelopeSchema = <T extends z.ZodTypeAny>(schema: T) =>
   z.object({

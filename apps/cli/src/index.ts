@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Command } from "commander";
-import { createContextSidecarService, SynthKitEngine } from "@synthkit/core";
-import { startApiServer } from "@synthkit/api";
-import { startMcpHttpServer, startMcpServer } from "@synthkit/mcp";
-import { ProviderConfigSchema } from "@synthkit/providers";
+import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
+import { startApiServer } from "@context-sidecar/api";
+import { startMcpHttpServer, startMcpServer } from "@context-sidecar/mcp";
+import { ProviderConfigSchema } from "@context-sidecar/providers";
 import { z } from "zod";
 
 const program = new Command();

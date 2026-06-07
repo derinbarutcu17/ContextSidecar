@@ -1,5 +1,5 @@
 {
-  "name": "@synthkit/sdk-ts",
+  "name": "@context-sidecar/sdk-ts",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -18,8 +18,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@synthkit/core": "workspace:*",
-    "@synthkit/domain": "workspace:*",
+    "@context-sidecar/core": "workspace:*",
+    "@context-sidecar/domain": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

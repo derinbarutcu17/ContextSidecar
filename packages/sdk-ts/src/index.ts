@@ -1,4 +1,4 @@
-import { SynthKitEngine, type SynthKitConfig } from "@synthkit/core";
+import { SynthKitEngine, type SynthKitConfig } from "@context-sidecar/core";
 import {
   CapabilityManifestV1Schema,
   CitationV1Schema,
@@ -10,7 +10,7 @@ import {
   SynthesisModeV1Schema,
   type ProjectV1,
   type SynthesisModeV1
-} from "@synthkit/domain";
+} from "@context-sidecar/domain";
 import { z } from "zod";
 
 const ApiResponseSchema = z.object({
@@ -252,4 +252,4 @@ export {
   ProjectV1Schema,
   RevisionV1Schema,
   SynthesisModeV1Schema
-} from "@synthkit/domain";
+} from "@context-sidecar/domain";

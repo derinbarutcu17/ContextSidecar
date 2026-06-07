@@ -2,10 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { SynthKitEngine } from "@synthkit/core";
+import { SynthKitEngine } from "@context-sidecar/core";
 import { SynthKitIngestor } from "../src/index.js";
-import { createStorage } from "@synthkit/storage";
-import type { SynthKitProvider } from "@synthkit/providers";
+import { createStorage } from "@context-sidecar/storage";
+import type { SynthKitProvider } from "@context-sidecar/providers";
 
 const tmpRoot = () => fs.mkdtempSync(path.join(os.tmpdir(), "synthkit-ingest-"));
 

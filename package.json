@@ -8,10 +8,10 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",
-    "test:mcp": "./pnpm --filter @synthkit/mcp test",
-    "test:cli": "./pnpm --filter @synthkit/cli test",
-    "test:e2e": "./pnpm --filter @synthkit/api test:e2e",
-    "eval": "./pnpm --filter @synthkit/evals test",
+    "test:mcp": "./pnpm --filter @context-sidecar/mcp test",
+    "test:cli": "./pnpm --filter @context-sidecar/cli test",
+    "test:e2e": "./pnpm --filter @context-sidecar/api test:e2e",
+    "eval": "./pnpm --filter @context-sidecar/evals test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "check": "./pnpm exec context-sidecar doctor --json",
@@ -21,7 +21,7 @@
     "clean": "turbo run clean"
   },
   "devDependencies": {
-    "@synthkit/cli": "workspace:*",
+    "@context-sidecar/cli": "workspace:*",
     "turbo": "^2.5.8",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4",

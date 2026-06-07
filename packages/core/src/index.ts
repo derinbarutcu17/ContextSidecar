@@ -17,11 +17,11 @@ import {
   type SynthesisRequestV1,
   type ThemeClusterV1,
   nowIso
-} from "@synthkit/domain";
-import { createIngestor, type IngestResult } from "@synthkit/ingest";
-import { createMockProvider, createProvider, type ProviderConfig, type SynthKitProvider } from "@synthkit/providers";
-import { makeId, median, sha256, toSafeFilename, truncate, uniq } from "@synthkit/shared";
-import { createStorage, type SynthKitStorage } from "@synthkit/storage";
+} from "@context-sidecar/domain";
+import { createIngestor, type IngestResult } from "@context-sidecar/ingest";
+import { createMockProvider, createProvider, type ProviderConfig, type SynthKitProvider } from "@context-sidecar/providers";
+import { makeId, median, sha256, toSafeFilename, truncate, uniq } from "@context-sidecar/shared";
+import { createStorage, type SynthKitStorage } from "@context-sidecar/storage";
 export { ContextSidecarService, createContextSidecarService } from "./context-service.js";
 
 const STOPWORDS = new Set([

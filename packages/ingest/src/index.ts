@@ -12,10 +12,10 @@ import {
   type ChunkV1,
   type SourceAssetV1,
   type SourceV1
-} from "@synthkit/domain";
-import { dedupeHash, makeId, sha256, titleFromText, truncate } from "@synthkit/shared";
-import { createStorage, type SynthKitStorage } from "@synthkit/storage";
-import { type SynthKitProvider } from "@synthkit/providers";
+} from "@context-sidecar/domain";
+import { dedupeHash, makeId, sha256, titleFromText, truncate } from "@context-sidecar/shared";
+import { createStorage, type SynthKitStorage } from "@context-sidecar/storage";
+import { type SynthKitProvider } from "@context-sidecar/providers";
 
 const require = createRequire(import.meta.url);
 const pdfParse: any = require("pdf-parse");

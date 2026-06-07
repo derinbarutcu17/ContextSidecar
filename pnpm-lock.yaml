@@ -8,7 +8,7 @@ importers:
 
   .:
     devDependencies:
-      '@synthkit/cli':
+      '@context-sidecar/cli':
         specifier: workspace:*
         version: link:apps/cli
       tsx:
@@ -26,16 +26,16 @@ importers:
 
   apps/api:
     dependencies:
-      '@synthkit/core':
+      '@context-sidecar/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@synthkit/providers':
+      '@context-sidecar/providers':
         specifier: workspace:*
         version: link:../../packages/providers
-      '@synthkit/shared':
+      '@context-sidecar/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       fastify:
@@ -60,22 +60,22 @@ importers:
 
   apps/cli:
     dependencies:
-      '@synthkit/api':
+      '@context-sidecar/api':
         specifier: workspace:*
         version: link:../api
-      '@synthkit/core':
+      '@context-sidecar/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@synthkit/mcp':
+      '@context-sidecar/mcp':
         specifier: workspace:*
         version: link:../mcp
-      '@synthkit/providers':
+      '@context-sidecar/providers':
         specifier: workspace:*
         version: link:../../packages/providers
-      '@synthkit/shared':
+      '@context-sidecar/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       commander:
@@ -100,18 +100,18 @@ importers:
 
   apps/mcp:
     dependencies:
+      '@context-sidecar/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@context-sidecar/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@context-sidecar/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@modelcontextprotocol/sdk':
         specifier: ^1.17.0
         version: 1.29.0(zod@4.3.6)
-      '@synthkit/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@synthkit/domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
-      '@synthkit/providers':
-        specifier: workspace:*
-        version: link:../../packages/providers
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -131,19 +131,19 @@ importers:
 
   packages/core:
     dependencies:
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../domain
-      '@synthkit/ingest':
+      '@context-sidecar/ingest':
         specifier: workspace:*
         version: link:../ingest
-      '@synthkit/providers':
+      '@context-sidecar/providers':
         specifier: workspace:*
         version: link:../providers
-      '@synthkit/shared':
+      '@context-sidecar/shared':
         specifier: workspace:*
         version: link:../shared
-      '@synthkit/storage':
+      '@context-sidecar/storage':
         specifier: workspace:*
         version: link:../storage
       zod:
@@ -175,19 +175,19 @@ importers:
 
   packages/evals:
     dependencies:
-      '@synthkit/core':
+      '@context-sidecar/core':
         specifier: workspace:*
         version: link:../core
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../domain
-      '@synthkit/providers':
+      '@context-sidecar/providers':
         specifier: workspace:*
         version: link:../providers
-      '@synthkit/shared':
+      '@context-sidecar/shared':
         specifier: workspace:*
         version: link:../shared
-      '@synthkit/storage':
+      '@context-sidecar/storage':
         specifier: workspace:*
         version: link:../storage
     devDependencies:
@@ -203,16 +203,16 @@ importers:
 
   packages/ingest:
     dependencies:
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../domain
-      '@synthkit/providers':
+      '@context-sidecar/providers':
         specifier: workspace:*
         version: link:../providers
-      '@synthkit/shared':
+      '@context-sidecar/shared':
         specifier: workspace:*
         version: link:../shared
-      '@synthkit/storage':
+      '@context-sidecar/storage':
         specifier: workspace:*
         version: link:../storage
       pdf-parse:
@@ -234,10 +234,10 @@ importers:
 
   packages/providers:
     dependencies:
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../domain
-      '@synthkit/shared':
+      '@context-sidecar/shared':
         specifier: workspace:*
         version: link:../shared
       zod:
@@ -253,10 +253,10 @@ importers:
 
   packages/sdk-ts:
     dependencies:
-      '@synthkit/core':
+      '@context-sidecar/core':
         specifier: workspace:*
         version: link:../core
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../domain
       zod:
@@ -281,10 +281,10 @@ importers:
 
   packages/storage:
     dependencies:
-      '@synthkit/domain':
+      '@context-sidecar/domain':
         specifier: workspace:*
         version: link:../domain
-      '@synthkit/shared':
+      '@context-sidecar/shared':
         specifier: workspace:*
         version: link:../shared
       better-sqlite3:

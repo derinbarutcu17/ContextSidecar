@@ -1,5 +1,5 @@
 {
-  "name": "@synthkit/ingest",
+  "name": "@context-sidecar/ingest",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -19,10 +19,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@synthkit/domain": "workspace:*",
-    "@synthkit/providers": "workspace:*",
-    "@synthkit/shared": "workspace:*",
-    "@synthkit/storage": "workspace:*",
+    "@context-sidecar/domain": "workspace:*",
+    "@context-sidecar/providers": "workspace:*",
+    "@context-sidecar/shared": "workspace:*",
+    "@context-sidecar/storage": "workspace:*",
     "pdf-parse": "^1.1.1",
     "zod": "^4.3.6"
   },

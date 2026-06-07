@@ -26,8 +26,8 @@ import {
   RevisionV1Schema,
   type ThemeClusterV1,
   nowIso
-} from "@synthkit/domain";
-import { sha256 } from "@synthkit/shared";
+} from "@context-sidecar/domain";
+import { sha256 } from "@context-sidecar/shared";
 
 type SqliteDb = Database.Database;
 

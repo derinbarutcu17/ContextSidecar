@@ -1,5 +1,5 @@
 {
-  "name": "@synthkit/core",
+  "name": "@context-sidecar/core",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -19,11 +19,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@synthkit/domain": "workspace:*",
-    "@synthkit/ingest": "workspace:*",
-    "@synthkit/providers": "workspace:*",
-    "@synthkit/shared": "workspace:*",
-    "@synthkit/storage": "workspace:*",
+    "@context-sidecar/domain": "workspace:*",
+    "@context-sidecar/ingest": "workspace:*",
+    "@context-sidecar/providers": "workspace:*",
+    "@context-sidecar/shared": "workspace:*",
+    "@context-sidecar/storage": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

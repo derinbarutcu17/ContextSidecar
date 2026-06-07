@@ -1,4 +1,4 @@
-import { SynthKitApiClient } from "@synthkit/sdk-ts";
+import { SynthKitApiClient } from "@context-sidecar/sdk-ts";
 
 const client = new SynthKitApiClient({ baseUrl: "http://127.0.0.1:8787" });
 

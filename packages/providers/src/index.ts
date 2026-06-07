@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { sha256 } from "@synthkit/shared";
+import { sha256 } from "@context-sidecar/shared";
 
 export const ProviderKindSchema = z.enum(["mock", "openai", "anthropic", "ollama"]);
 

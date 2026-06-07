@@ -20,9 +20,9 @@ import {
   SynthesisModeV1Schema,
   ThemeClusterV1Schema,
   type SynthesisModeV1
-} from "@synthkit/domain";
-import { createContextSidecarService, SynthKitEngine, type SynthKitConfig } from "@synthkit/core";
-import { ProviderConfigSchema } from "@synthkit/providers";
+} from "@context-sidecar/domain";
+import { createContextSidecarService, SynthKitEngine, type SynthKitConfig } from "@context-sidecar/core";
+import { ProviderConfigSchema } from "@context-sidecar/providers";
 import { z } from "zod";
 import { apiRouteDefinitions, routeSchemas } from "./routes.js";
 

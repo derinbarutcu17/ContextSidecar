@@ -1,5 +1,5 @@
 {
-  "name": "@synthkit/cli",
+  "name": "@context-sidecar/cli",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -26,12 +26,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@synthkit/api": "workspace:*",
-    "@synthkit/core": "workspace:*",
-    "@synthkit/domain": "workspace:*",
-    "@synthkit/mcp": "workspace:*",
-    "@synthkit/providers": "workspace:*",
-    "@synthkit/shared": "workspace:*",
+    "@context-sidecar/api": "workspace:*",
+    "@context-sidecar/core": "workspace:*",
+    "@context-sidecar/domain": "workspace:*",
+    "@context-sidecar/mcp": "workspace:*",
+    "@context-sidecar/providers": "workspace:*",
+    "@context-sidecar/shared": "workspace:*",
     "commander": "^12.1.0",
     "zod": "^4.3.6"
   },
