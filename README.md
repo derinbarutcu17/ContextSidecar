@@ -112,10 +112,12 @@ All context commands support `--json`.
 
 ./pnpm exec context-sidecar context import markdown \
   --namespace project:repo-a \
-  --input ../Docs ../Utilities/memory \
+  --input . \
   --item-type project_fact \
   --json
 ```
+
+**Note**: The `withService` helper function has been added to reduce code duplication in CLI commands, improving maintainability while keeping all functionality intact.
 
 ## HTTP API
 
