@@ -157,6 +157,17 @@ const output = (value: unknown, json = false) => {
   console.log(JSON.stringify(value, null, 2));
 };
 
+const withService = async <T>(root: string, action: (service: ReturnType<typeof createContextSidecarService>) => Promise<T> | T, json: boolean) => {
+  const service = createContextSidecarService(root);
+  try {
+    const result = await action(service);
+    output(result, json);
+    return result;
+  } finally {
+    service.storage.close();
+  }
+};
+
 const contextCommand = program.command("context").description("Manage local-first context sidecar items and packs");
 
 program
@@ -275,22 +286,17 @@ contextCommand
       .option("--tag <tags...>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean | undefined>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.addItem({
-            namespace: String(opts.namespace),
-            item_type: String(opts.itemType) as any,
-            content: String(opts.content),
-            source_type: String(opts.sourceType) as any,
-            source_reference: opts.sourceReference ? String(opts.sourceReference) : null,
-            priority: Number(opts.priority ?? 0),
-            status: String(opts.status) as any,
-            expires_at: opts.expiresAt ? String(opts.expiresAt) : null,
-            tags: (opts.tag as string[] | undefined) ?? []
-          }), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.addItem({
+          namespace: String(opts.namespace),
+          item_type: String(opts.itemType) as any,
+          content: String(opts.content),
+          source_type: String(opts.sourceType) as any,
+          source_reference: opts.sourceReference ? String(opts.sourceReference) : null,
+          priority: Number(opts.priority ?? 0),
+          status: String(opts.status) as any,
+          expires_at: opts.expiresAt ? String(opts.expiresAt) : null,
+          tags: (opts.tag as string[] | undefined) ?? []
+        }), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -303,18 +309,13 @@ contextCommand
       .option("--tag <tags...>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean | undefined>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.updateItem(String(opts.id), {
-            ...(opts.content !== undefined ? { content: String(opts.content) } : {}),
-            ...(opts.priority !== undefined ? { priority: Number(opts.priority) } : {}),
-            ...(opts.status !== undefined ? { status: String(opts.status) as any } : {}),
-            ...(opts.expiresAt !== undefined ? { expires_at: String(opts.expiresAt) } : {}),
-            ...(opts.tag !== undefined ? { tags: opts.tag as string[] } : {})
-          }), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.updateItem(String(opts.id), {
+          ...(opts.content !== undefined ? { content: String(opts.content) } : {}),
+          ...(opts.priority !== undefined ? { priority: Number(opts.priority) } : {}),
+          ...(opts.status !== undefined ? { status: String(opts.status) as any } : {}),
+          ...(opts.expiresAt !== undefined ? { expires_at: String(opts.expiresAt) } : {}),
+          ...(opts.tag !== undefined ? { tags: opts.tag as string[] } : {})
+        }), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -322,12 +323,7 @@ contextCommand
       .requiredOption("--id <id>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.getItem(String(opts.id)), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.getItem(String(opts.id)), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -338,17 +334,12 @@ contextCommand
       .option("--tag <tag>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.listItems({
-            namespace: String(opts.namespace),
-            ...(opts.itemType ? { item_type: String(opts.itemType) as any } : {}),
-            ...(opts.status ? { status: String(opts.status) as any } : {}),
-            ...(opts.tag ? { tag: String(opts.tag) } : {})
-          }), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.listItems({
+          namespace: String(opts.namespace),
+          ...(opts.itemType ? { item_type: String(opts.itemType) as any } : {}),
+          ...(opts.status ? { status: String(opts.status) as any } : {}),
+          ...(opts.tag ? { tag: String(opts.tag) } : {})
+        }), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -359,17 +350,12 @@ contextCommand
       .option("--status <status>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.searchItems({
-            namespace: String(opts.namespace),
-            query: String(opts.query),
-            ...(opts.itemType ? { item_type: String(opts.itemType) as any } : {}),
-            ...(opts.status ? { status: String(opts.status) as any } : {})
-          }), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.searchItems({
+          namespace: String(opts.namespace),
+          query: String(opts.query),
+          ...(opts.itemType ? { item_type: String(opts.itemType) as any } : {}),
+          ...(opts.status ? { status: String(opts.status) as any } : {})
+        }), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -381,19 +367,14 @@ contextCommand
       .option("--include-archived", "include archived items in the pack", false)
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.buildContextPack({
-            namespace: String(opts.namespace),
-            task_query: opts.taskQuery ? String(opts.taskQuery) : null,
-            max_items: opts.maxItems ? Number(opts.maxItems) : null,
-            include_types: (opts.includeType as string[] | undefined)?.map((value) => value as any) ?? null,
-            exclude_archived: !Boolean(opts.includeArchived),
-            now: null
-          }), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.buildContextPack({
+          namespace: String(opts.namespace),
+          task_query: opts.taskQuery ? String(opts.taskQuery) : null,
+          max_items: opts.maxItems ? Number(opts.maxItems) : null,
+          include_types: (opts.includeType as string[] | undefined)?.map((value) => value as any) ?? null,
+          exclude_archived: !Boolean(opts.includeArchived),
+          now: null
+        }), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -401,13 +382,10 @@ contextCommand
       .option("--now <now>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
+        await withService(String(opts.root), (service) => {
           const namespaces = opts.now ? service.listNamespaces({ now: String(opts.now) }) : service.listNamespaces();
-          output(namespaces, Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+          return namespaces;
+        }, Boolean(opts.json));
       })
   )
   .addCommand(
@@ -416,8 +394,7 @@ contextCommand
       .option("--now <now>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
+        await withService(String(opts.root), (service) => {
           const namespaces = opts.now ? service.listNamespaces({ now: String(opts.now) }) : service.listNamespaces();
           const totals = namespaces.reduce((accumulator, summary) => ({
             namespaceCount: accumulator.namespaceCount + 1,
@@ -434,17 +411,15 @@ contextCommand
             archivedCount: 0,
             expiredCount: 0
           });
-          output({
+          return {
             ok: true,
             rootPath: String(opts.root),
             storageExists: fs.existsSync(path.join(String(opts.root), "context-sidecar.sqlite")),
             namespaces,
             totals,
             recommendedNextStep: "Run `pnpm exec context-sidecar context bootstrap repo` to seed repo docs."
-          }, Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+          };
+        }, Boolean(opts.json));
       })
   )
   .addCommand(
@@ -452,12 +427,7 @@ contextCommand
       .requiredOption("--id <id>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.archiveItem(String(opts.id)), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.archiveItem(String(opts.id)), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -465,12 +435,7 @@ contextCommand
       .requiredOption("--id <id>")
       .action(async function (this: Command) {
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
-        const service = createContextSidecarService(String(opts.root));
-        try {
-          output(service.pinItem(String(opts.id)), Boolean(opts.json));
-        } finally {
-          service.storage.close();
-        }
+        await withService(String(opts.root), (service) => service.pinItem(String(opts.id)), Boolean(opts.json));
       })
   )
   .addCommand(
@@ -489,8 +454,7 @@ contextCommand
           .action(async function (this: Command) {
             const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean | undefined>;
             const inputs = Array.isArray(opts.input) ? opts.input.map(String) : [String(opts.input)];
-            const service = createContextSidecarService(String(opts.root));
-            try {
+            await withService(String(opts.root), (service) => {
               const imported = importMarkdownPaths(service, {
                 namespace: String(opts.namespace),
                 inputs,
@@ -500,14 +464,12 @@ contextCommand
                 status: String(opts.status),
                 tags: (opts.tag as string[] | undefined) ?? []
               });
-              output({
+              return {
                 ok: true,
                 namespace: String(opts.namespace),
                 import: imported
-              }, Boolean(opts.json));
-            } finally {
-              service.storage.close();
-            }
+              };
+            }, Boolean(opts.json));
           })
       )
   )
@@ -522,8 +484,7 @@ contextCommand
           .option("--tag <tags...>")
           .action(async function (this: Command) {
             const opts = this.optsWithGlobals() as Record<string, string | string[] | boolean | undefined>;
-            const service = createContextSidecarService(String(opts.root));
-            try {
+            await withService(String(opts.root), (service) => {
               const sharedTags = uniqueStrings(["bootstrap", "repo", ...((opts.tag as string[] | undefined) ?? [])]);
               const namespace = String(opts.namespace);
               const priority = Number(opts.priority ?? 80);
@@ -553,14 +514,12 @@ contextCommand
                   })
                 }
               ];
-              output({
+              return {
                 ok: true,
                 namespace,
                 imports: imported
-              }, Boolean(opts.json));
-            } finally {
-              service.storage.close();
-            }
+              };
+            }, Boolean(opts.json));
           })
       )
   );
