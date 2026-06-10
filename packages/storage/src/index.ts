@@ -269,6 +269,31 @@ const effectiveContextStatus = (item: ContextItemV1, now: string) => {
   return item.status;
 };
 
+const statusRank = (status: ContextStatus) => {
+  switch (status) {
+    case "pinned":
+      return 3;
+    case "active":
+      return 2;
+    case "archived":
+      return 1;
+    case "expired":
+      return 0;
+  }
+};
+
+const compareContextItems = (left: ContextItemV1, right: ContextItemV1, now: string) => {
+  const leftStatus = effectiveContextStatus(left, now);
+  const rightStatus = effectiveContextStatus(right, now);
+  return (
+    statusRank(rightStatus) - statusRank(leftStatus) ||
+    right.priority - left.priority ||
+    right.updated_at.localeCompare(left.updated_at) ||
+    right.created_at.localeCompare(left.created_at) ||
+    left.id.localeCompare(right.id)
+  );
+};
+
 const shouldIncludeContextItem = (
   item: ContextItemV1,
   filters: Pick<ListContextItemsFilters, "status" | "includeArchived" | "now">
@@ -695,15 +720,17 @@ export class SynthKitStorage {
 
   listContextItems(filters: ListContextItemsFilters) {
     const rows = this.db.prepare(`SELECT data FROM context_items WHERE namespace = ? ORDER BY created_at DESC, id ASC`).all(filters.namespace) as Array<{ data: string }>;
+    const now = filters.now ?? nowIso();
     return rows
       .map((row) => ContextItemV1Schema.parse(parseJson(row.data)))
       .filter((item) => !filters.item_type || item.item_type === filters.item_type)
       .filter((item) => !filters.tag || item.tags.includes(filters.tag))
       .filter((item) => shouldIncludeContextItem(item, filters))
-      .sort((left, right) => right.created_at.localeCompare(left.created_at) || right.updated_at.localeCompare(left.updated_at) || left.id.localeCompare(right.id));
+      .sort((left, right) => compareContextItems(left, right, now));
   }
 
   searchContextItems(filters: SearchContextItemsFilters) {
+    const now = filters.now ?? nowIso();
     return this.listContextItems(filters)
       .filter((item) => scoreTextMatch([item.content, item.tags.join(" "), JSON.stringify(item.metadata)].join(" "), filters.query) > 0)
       .sort((left, right) => {
@@ -711,6 +738,8 @@ export class SynthKitStorage {
           scoreTextMatch([right.content, right.tags.join(" "), JSON.stringify(right.metadata)].join(" "), filters.query) -
           scoreTextMatch([left.content, left.tags.join(" "), JSON.stringify(left.metadata)].join(" "), filters.query);
         if (matchDelta !== 0) return matchDelta;
+        const statusDelta = statusRank(effectiveContextStatus(right, now)) - statusRank(effectiveContextStatus(left, now));
+        if (statusDelta !== 0) return statusDelta;
         if (right.priority !== left.priority) return right.priority - left.priority;
         return right.updated_at.localeCompare(left.updated_at) || left.id.localeCompare(right.id);
       });

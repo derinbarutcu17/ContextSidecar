@@ -43,6 +43,14 @@ describe("context storage", () => {
     storage.close();
   });
 
+  it("keeps pinned items ahead of newer active items", () => {
+    const storage = createTempStorage();
+    storage.createContextItem({ id: "ctx_1", namespace: "project:repo-a", item_type: "workflow_note", content: "New active note", source_type: "manual_entry", source_reference: null, priority: 1, status: "active", created_at: "2026-04-21T10:00:00.000Z", updated_at: "2026-04-21T10:00:00.000Z", expires_at: null, tags: [], metadata: {} });
+    storage.createContextItem({ id: "ctx_2", namespace: "project:repo-a", item_type: "pinned_instruction", content: "Older pinned note", source_type: "manual_entry", source_reference: null, priority: 1, status: "pinned", created_at: "2026-04-21T08:00:00.000Z", updated_at: "2026-04-21T08:00:00.000Z", expires_at: null, tags: [], metadata: {} });
+    expect(storage.listContextItems({ namespace: "project:repo-a" }).map((item) => item.id)).toEqual(["ctx_2", "ctx_1"]);
+    storage.close();
+  });
+
   it("searches ranked matches and excludes expired items by default", () => {
     const storage = createTempStorage();
     storage.createContextItem({ id: "ctx_1", namespace: "project:repo-a", item_type: "project_fact", content: "The context pack must stay compact and deterministic.", source_type: "system_note", source_reference: null, priority: 4, status: "active", created_at: "2026-04-21T08:00:00.000Z", updated_at: "2026-04-21T08:00:00.000Z", expires_at: null, tags: ["pack"], metadata: {} });
