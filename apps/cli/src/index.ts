@@ -396,6 +396,7 @@ contextCommand
         const opts = this.optsWithGlobals() as Record<string, string | boolean>;
         await withService(String(opts.root), (service) => {
           const namespaces = opts.now ? service.listNamespaces({ now: String(opts.now) }) : service.listNamespaces();
+          const storageExists = fs.existsSync(path.join(String(opts.root), "context-sidecar.sqlite"));
           const totals = namespaces.reduce((accumulator, summary) => ({
             namespaceCount: accumulator.namespaceCount + 1,
             itemCount: accumulator.itemCount + summary.item_count,
@@ -411,13 +412,16 @@ contextCommand
             archivedCount: 0,
             expiredCount: 0
           });
+          const recommendedNextStep = !storageExists || namespaces.length === 0
+            ? "Run `pnpm exec context-sidecar context bootstrap repo` to seed repo docs."
+            : "Run `pnpm exec context-sidecar context pack --namespace <namespace>` for the namespace you are working in.";
           return {
             ok: true,
             rootPath: String(opts.root),
-            storageExists: fs.existsSync(path.join(String(opts.root), "context-sidecar.sqlite")),
+            storageExists,
             namespaces,
             totals,
-            recommendedNextStep: "Run `pnpm exec context-sidecar context bootstrap repo` to seed repo docs."
+            recommendedNextStep
           };
         }, Boolean(opts.json));
       })

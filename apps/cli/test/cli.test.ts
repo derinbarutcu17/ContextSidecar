@@ -59,12 +59,18 @@ describe("CLI", () => {
     execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-a", "--item-type", "pinned_instruction", "--content", "One.", "--source-type", "manual_entry", "--status", "pinned", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
     execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-b", "--item-type", "workflow_note", "--content", "Two.", "--source-type", "manual_entry", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
     const summaryOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "summary", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
-    const summary = JSON.parse(summaryOutput) as { ok: boolean; totals: { namespaceCount: number; itemCount: number; pinnedCount: number }; namespaces: Array<{ namespace: string }> };
+    const summary = JSON.parse(summaryOutput) as {
+      ok: boolean;
+      totals: { namespaceCount: number; itemCount: number; pinnedCount: number };
+      namespaces: Array<{ namespace: string }>;
+      recommendedNextStep: string;
+    };
     expect(summary.ok).toBe(true);
     expect(summary.totals.namespaceCount).toBe(2);
     expect(summary.totals.itemCount).toBe(2);
     expect(summary.totals.pinnedCount).toBe(1);
     expect(summary.namespaces.map((entry) => entry.namespace)).toEqual(["project:repo-b", "project:repo-a"]);
+    expect(summary.recommendedNextStep).toContain("context pack --namespace <namespace>");
   });
 
   it("allows updating priority to zero", () => {
