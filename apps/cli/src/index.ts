@@ -44,6 +44,54 @@ const markdownTitle = (filePath: string, content: string) => {
 
 const uniqueStrings = (values: string[]) => [...new Set(values.filter(Boolean))];
 
+type AgentConfigTarget = "hermes" | "claude-code" | "openclaw";
+
+const buildAgentConfig = (root: string, target: AgentConfigTarget) => {
+  const repoRoot = path.resolve(process.cwd());
+  const pnpmPath = path.join(repoRoot, "pnpm");
+  const contextHome = path.resolve(root);
+  const hermesScript = path.join(repoRoot, "scripts", "serve-hermes.sh");
+
+  if (target === "hermes") {
+    const configText = `native_mcp:
+  enabled: true
+  servers:
+    context-sidecar:
+      command: ${hermesScript}
+      args: []`;
+    return {
+      target,
+      title: "Hermes native MCP config",
+      configText,
+      nextSteps: ["Add this block to ~/.hermes/config.yaml", "Restart Hermes"]
+    };
+  }
+
+  const launcher = {
+    command: pnpmPath,
+    args: ["dev:mcp"],
+    env: {
+      CONTEXT_SIDECAR_HOME: contextHome
+    }
+  };
+
+  if (target === "claude-code") {
+    return {
+      target,
+      title: "Claude Code MCP config",
+      configText: JSON.stringify({ mcpServers: { "context-sidecar": launcher } }, null, 2),
+      nextSteps: ["Add this block to your Claude Code MCP config", "Restart Claude Code"]
+    };
+  }
+
+  return {
+    target,
+    title: "OpenClaw MCP launch snippet",
+    configText: [`command: ${launcher.command}`, `args:`, `  - ${launcher.args[0]}`, `env:`, `  CONTEXT_SIDECAR_HOME: ${launcher.env.CONTEXT_SIDECAR_HOME}`].join("\n"),
+    nextSteps: ["Paste this launch block into OpenClaw's MCP registry", "Verify with `openclaw mcp status` or `openclaw mcp probe`"]
+  };
+};
+
 const importMarkdownPaths = (
   service: ReturnType<typeof createContextSidecarService>,
   options: {
@@ -474,6 +522,31 @@ contextCommand
                 import: imported
               };
             }, Boolean(opts.json));
+          })
+      )
+  )
+  .addCommand(
+    new Command("agent")
+      .description("Generate agent integration snippets")
+      .addCommand(
+        new Command("config")
+          .option("--target <target>", "hermes, claude-code, or openclaw", "hermes")
+          .action(function (this: Command) {
+            const opts = this.optsWithGlobals() as Record<string, string | boolean>;
+            const target = String(opts.target) as AgentConfigTarget;
+            if (!["hermes", "claude-code", "openclaw"].includes(target)) {
+              throw new Error(`Unsupported agent target: ${target}`);
+            }
+            const result = buildAgentConfig(String(opts.root), target);
+            if (Boolean(opts.json)) {
+              output({
+                ok: true,
+                rootPath: String(opts.root),
+                ...result
+              }, true);
+              return;
+            }
+            output(`## ${result.title}\n\n${result.configText}\n\nNext steps:\n- ${result.nextSteps.join("\n- ")}`);
           })
       )
   )

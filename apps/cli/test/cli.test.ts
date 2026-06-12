@@ -73,6 +73,24 @@ describe("CLI", () => {
     expect(summary.recommendedNextStep).toContain("context pack --namespace <namespace>");
   });
 
+  it("generates agent integration snippets", () => {
+    const root = ".tmp-cli-agent-config";
+    fs.rmSync(root, { recursive: true, force: true });
+    const hermesOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "agent", "config", "--target", "hermes", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const hermes = JSON.parse(hermesOutput) as { ok: boolean; target: string; configText: string; nextSteps: string[] };
+    expect(hermes.ok).toBe(true);
+    expect(hermes.target).toBe("hermes");
+    expect(hermes.configText).toContain("native_mcp:");
+    expect(hermes.configText).toContain("serve-hermes.sh");
+    expect(hermes.nextSteps[0]).toContain("config.yaml");
+
+    const claudeOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "agent", "config", "--target", "claude-code", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const claude = JSON.parse(claudeOutput) as { target: string; configText: string };
+    expect(claude.target).toBe("claude-code");
+    expect(claude.configText).toContain("mcpServers");
+    expect(claude.configText).toContain("dev:mcp");
+  });
+
   it("allows updating priority to zero", () => {
     const root = ".tmp-cli-update-zero";
     fs.rmSync(root, { recursive: true, force: true });

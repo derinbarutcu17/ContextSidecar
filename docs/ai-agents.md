@@ -79,6 +79,16 @@ Use these item types for stable context:
 
 Use `./pnpm dev:mcp` together with [`docs/hermes-integration.md`](./hermes-integration.md) for Hermes Agent.
 
+## Agent setup helper
+
+Generate ready-to-paste snippets for common agent runtimes:
+
+```bash
+./pnpm exec context-sidecar context agent config --target hermes
+./pnpm exec context-sidecar context agent config --target claude-code
+./pnpm exec context-sidecar context agent config --target openclaw
+```
+
 ## Claude Code
 
 Use the example config in [`examples/claude-code/mcp-config.json`](../examples/claude-code/mcp-config.json).
