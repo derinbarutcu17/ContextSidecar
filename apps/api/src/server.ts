@@ -22,7 +22,7 @@ import {
   type SynthesisModeV1
 } from "@context-sidecar/domain";
 import { createContextSidecarService, SynthKitEngine, type SynthKitConfig } from "@context-sidecar/core";
-import { ProviderConfigSchema } from "@context-sidecar/providers";
+import { ProviderConfigSchema, resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
 import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
 import { z } from "zod";
 import { apiRouteDefinitions, routeSchemas } from "./routes.js";
@@ -81,7 +81,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
     envRootPath: process.env.CONTEXT_SIDECAR_HOME
   });
   fs.mkdirSync(rootPath, { recursive: true });
-  const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : parseProviderEnv();
+  const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : resolveProviderConfigFromProcessEnv();
   const engine = new SynthKitEngine({ rootPath, provider });
   const contextService = createContextSidecarService(rootPath);
   const app = Fastify({
@@ -362,39 +362,6 @@ export const startApiServer = async (options: AppServerOptions = {}) => {
   const host = process.env.HOST ?? "127.0.0.1";
   await server.app.listen({ port, host });
   return server;
-};
-
-const parseProviderEnv = () => {
-  const kind = process.env.SYNTHKIT_PROVIDER_KIND ?? "mock";
-  if (kind === "mock") {
-    return ProviderConfigSchema.parse({ kind: "mock", seed: process.env.SYNTHKIT_PROVIDER_SEED ?? "mock" });
-  }
-  if (kind === "openai") {
-    return ProviderConfigSchema.parse({
-      kind: "openai",
-      apiKey: process.env.OPENAI_API_KEY,
-      baseUrl: process.env.OPENAI_BASE_URL,
-      model: process.env.OPENAI_MODEL,
-      embeddingModel: process.env.OPENAI_EMBEDDING_MODEL,
-      ocrModel: process.env.OPENAI_OCR_MODEL,
-      transcriptionModel: process.env.OPENAI_TRANSCRIPTION_MODEL
-    });
-  }
-  if (kind === "anthropic") {
-    return ProviderConfigSchema.parse({
-      kind: "anthropic",
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      baseUrl: process.env.ANTHROPIC_BASE_URL,
-      model: process.env.ANTHROPIC_MODEL,
-      ocrModel: process.env.ANTHROPIC_OCR_MODEL
-    });
-  }
-  return ProviderConfigSchema.parse({
-    kind: "ollama",
-    baseUrl: process.env.OLLAMA_BASE_URL,
-    model: process.env.OLLAMA_MODEL,
-    embeddingModel: process.env.OLLAMA_EMBEDDING_MODEL
-  });
 };
 
 const getOpenApi = (manifest: unknown) => {

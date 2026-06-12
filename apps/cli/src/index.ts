@@ -5,7 +5,7 @@ import { Command } from "commander";
 import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
 import { startApiServer } from "@context-sidecar/api";
 import { startMcpHttpServer, startMcpServer } from "@context-sidecar/mcp";
-import { ProviderConfigSchema } from "@context-sidecar/providers";
+import { resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
 import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
 
 const program = new Command();
@@ -167,37 +167,8 @@ const importMarkdownPaths = (
   return imported;
 };
 
-const providerFromEnv = () => {
-  const kind = process.env.CONTEXT_SIDECAR_PROVIDER_KIND ?? "mock";
-  if (kind === "mock") {
-    return ProviderConfigSchema.parse({ kind: "mock", seed: process.env.CONTEXT_SIDECAR_PROVIDER_SEED ?? "mock" });
-  }
-  if (kind === "openai") {
-    return ProviderConfigSchema.parse({
-      kind: "openai",
-      apiKey: process.env.OPENAI_API_KEY,
-      baseUrl: process.env.OPENAI_BASE_URL,
-      model: process.env.OPENAI_MODEL,
-      embeddingModel: process.env.OPENAI_EMBEDDING_MODEL
-    });
-  }
-  if (kind === "anthropic") {
-    return ProviderConfigSchema.parse({
-      kind: "anthropic",
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      baseUrl: process.env.ANTHROPIC_BASE_URL,
-      model: process.env.ANTHROPIC_MODEL
-    });
-  }
-  return ProviderConfigSchema.parse({
-    kind: "ollama",
-    baseUrl: process.env.OLLAMA_BASE_URL,
-    model: process.env.OLLAMA_MODEL,
-    embeddingModel: process.env.OLLAMA_EMBEDDING_MODEL
-  });
-};
-
-const createEngine = (rootPath: string) => new SynthKitEngine({ rootPath, provider: providerFromEnv() });
+const createEngine = (rootPath: string) =>
+  new SynthKitEngine({ rootPath, provider: resolveProviderConfigFromProcessEnv({ prefix: "CONTEXT_SIDECAR" }) });
 
 const output = (value: unknown, json = false) => {
   if (json) {
