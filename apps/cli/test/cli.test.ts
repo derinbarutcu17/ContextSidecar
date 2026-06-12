@@ -81,7 +81,7 @@ describe("CLI", () => {
     expect(hermes.ok).toBe(true);
     expect(hermes.target).toBe("hermes");
     expect(hermes.configText).toContain("native_mcp:");
-    expect(hermes.configText).toContain("serve-hermes.sh");
+    expect(hermes.configText).toContain(path.join(process.cwd(), "../../scripts/serve-hermes.sh"));
     expect(hermes.nextSteps[0]).toContain("config.yaml");
 
     const claudeOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "agent", "config", "--target", "claude-code", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
@@ -89,6 +89,7 @@ describe("CLI", () => {
     expect(claude.target).toBe("claude-code");
     expect(claude.configText).toContain("mcpServers");
     expect(claude.configText).toContain("dev:mcp");
+    expect(claude.configText).toContain(path.join(process.cwd(), "../../pnpm"));
   });
 
   it("allows updating priority to zero", () => {

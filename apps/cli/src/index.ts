@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
 import { startApiServer } from "@context-sidecar/api";
@@ -47,7 +48,7 @@ const uniqueStrings = (values: string[]) => [...new Set(values.filter(Boolean))]
 type AgentConfigTarget = "hermes" | "claude-code" | "openclaw";
 
 const buildAgentConfig = (root: string, target: AgentConfigTarget) => {
-  const repoRoot = path.resolve(process.cwd());
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
   const pnpmPath = path.join(repoRoot, "pnpm");
   const contextHome = path.resolve(root);
   const hermesScript = path.join(repoRoot, "scripts", "serve-hermes.sh");
