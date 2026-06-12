@@ -48,9 +48,9 @@ It serves that context through the same storage-backed core across:
 
 | Surface | Best for | Start here |
 | --- | --- | --- |
+| MCP | Hermes, Claude Code, OpenClaw, and similar agents | [`./pnpm dev:mcp`](./docs/hermes-integration.md) |
 | CLI | Day-to-day local context work | [`./pnpm exec context-sidecar context ...`](./docs/ai-agents.md) |
 | HTTP API | Scripts and local integrations | [`./pnpm dev:api`](./examples/http/README.md) |
-| MCP | Hermes, Claude Code, OpenClaw, and similar agents | [`./pnpm dev:mcp`](./docs/hermes-integration.md) |
 | TypeScript SDK | TS apps and toolchains | [`packages/sdk-ts/src/index.ts`](./packages/sdk-ts/src/index.ts) |
 | Python SDK | Python scripts and notebooks | [`packages/sdk-py/README.md`](./packages/sdk-py/README.md) |
 
