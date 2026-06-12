@@ -6,14 +6,14 @@ import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/co
 import { startApiServer } from "@context-sidecar/api";
 import { startMcpHttpServer, startMcpServer } from "@context-sidecar/mcp";
 import { resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
-import { resolveContextSidecarRootPath, resolveServerListenOptions } from "@context-sidecar/shared";
+import { resolveContextSidecarRootPathFromProcessEnv, resolveServerListenOptions } from "@context-sidecar/shared";
 
 const program = new Command();
 program.name("context-sidecar").description("Local-first agent context sidecar").version("0.1.0");
 program.option(
   "--root <path>",
   "workspace root path",
-  resolveContextSidecarRootPath({ envRootPath: process.env.CONTEXT_SIDECAR_HOME })
+  resolveContextSidecarRootPathFromProcessEnv({ env: process.env })
 );
 program.option("--json", "emit JSON only", false);
 
@@ -199,7 +199,7 @@ program
   .command("init")
   .description("Initialize a workspace and print the default project path")
   .action(() => {
-    const rootPath = resolveContextSidecarRootPath({ envRootPath: process.env.CONTEXT_SIDECAR_HOME });
+    const rootPath = resolveContextSidecarRootPathFromProcessEnv({ env: process.env });
     fs.mkdirSync(rootPath, { recursive: true });
     output({ ok: true, rootPath });
   });
@@ -210,8 +210,9 @@ program
   .option(
     "--workspace <path>",
     "demo workspace path",
-    resolveContextSidecarRootPath({
-      envRootPath: process.env.CONTEXT_SIDECAR_DEMO_HOME,
+    resolveContextSidecarRootPathFromProcessEnv({
+      env: process.env,
+      envKey: "CONTEXT_SIDECAR_DEMO_HOME",
       defaultDir: ".context-sidecar-demo"
     })
   )

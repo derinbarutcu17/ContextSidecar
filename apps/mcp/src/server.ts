@@ -14,7 +14,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
 import { ProviderConfigSchema, resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
-import { resolveContextSidecarRootPath, resolveServerListenOptions } from "@context-sidecar/shared";
+import { resolveContextSidecarRootPathFromProcessEnv, resolveServerListenOptions } from "@context-sidecar/shared";
 import { z } from "zod";
 
 const ProjectCreateSchema = z.object({
@@ -56,10 +56,7 @@ export interface McpServerOptions {
 }
 
 export const createMcpServer = (options: McpServerOptions = {}) => {
-  const rootPath = resolveContextSidecarRootPath({
-    rootPath: options.rootPath,
-    envRootPath: process.env.CONTEXT_SIDECAR_HOME
-  });
+  const rootPath = options.rootPath ?? resolveContextSidecarRootPathFromProcessEnv({ env: process.env });
   const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : resolveProviderConfigFromProcessEnv();
   const engine = new SynthKitEngine({ rootPath, provider });
   const contextService = createContextSidecarService(rootPath);

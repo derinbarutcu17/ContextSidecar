@@ -17,6 +17,20 @@ export const resolveContextSidecarRootPath = (input: ResolveContextSidecarRootPa
       ?? path.join(input.cwd ?? process.cwd(), input.defaultDir ?? DEFAULT_CONTEXT_SIDECAR_DIR)
   );
 
+export interface ResolveContextSidecarRootPathFromProcessEnvInput {
+  env?: NodeJS.ProcessEnv | undefined;
+  envKey?: string | undefined;
+  cwd?: string | undefined;
+  defaultDir?: string | undefined;
+}
+
+export const resolveContextSidecarRootPathFromProcessEnv = (input: ResolveContextSidecarRootPathFromProcessEnvInput = {}) =>
+  resolveContextSidecarRootPath({
+    envRootPath: input.env?.[input.envKey ?? "CONTEXT_SIDECAR_HOME"],
+    cwd: input.cwd,
+    defaultDir: input.defaultDir
+  });
+
 export interface ResolveServerListenOptionsInput {
   env?: NodeJS.ProcessEnv | undefined;
   defaultHost?: string | undefined;

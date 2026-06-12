@@ -1,9 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { resolveContextSidecarRootPath, resolveServerListenOptions } from "../src/index.js";
+import { resolveContextSidecarRootPath, resolveContextSidecarRootPathFromProcessEnv, resolveServerListenOptions } from "../src/index.js";
 
 describe("shared runtime helpers", () => {
   it("resolves the default sidecar root from cwd", () => {
     expect(resolveContextSidecarRootPath({ cwd: "/repo" })).toBe("/repo/.context-sidecar");
+  });
+
+  it("resolves the sidecar root from env keys", () => {
+    expect(
+      resolveContextSidecarRootPathFromProcessEnv({
+        env: { CONTEXT_SIDECAR_HOME: "/custom/home" } as NodeJS.ProcessEnv
+      })
+    ).toBe("/custom/home");
+    expect(
+      resolveContextSidecarRootPathFromProcessEnv({
+        env: { CONTEXT_SIDECAR_DEMO_HOME: "/custom/demo" } as NodeJS.ProcessEnv,
+        envKey: "CONTEXT_SIDECAR_DEMO_HOME"
+      })
+    ).toBe("/custom/demo");
   });
 
   it("resolves server listen options from env and defaults", () => {
