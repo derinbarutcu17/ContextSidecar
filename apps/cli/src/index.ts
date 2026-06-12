@@ -13,7 +13,7 @@ program.name("context-sidecar").description("Local-first agent context sidecar")
 program.option(
   "--root <path>",
   "workspace root path",
-  resolveContextSidecarRootPathFromProcessEnv({ env: process.env })
+  resolveContextSidecarRootPathFromProcessEnv()
 );
 program.option("--json", "emit JSON only", false);
 
@@ -199,7 +199,7 @@ program
   .command("init")
   .description("Initialize a workspace and print the default project path")
   .action(() => {
-    const rootPath = resolveContextSidecarRootPathFromProcessEnv({ env: process.env });
+    const rootPath = resolveContextSidecarRootPathFromProcessEnv();
     fs.mkdirSync(rootPath, { recursive: true });
     output({ ok: true, rootPath });
   });
@@ -211,7 +211,6 @@ program
     "--workspace <path>",
     "demo workspace path",
     resolveContextSidecarRootPathFromProcessEnv({
-      env: process.env,
       envKey: "CONTEXT_SIDECAR_DEMO_HOME",
       defaultDir: ".context-sidecar-demo"
     })

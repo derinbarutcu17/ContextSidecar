@@ -76,7 +76,7 @@ export interface AppServerOptions {
 }
 
 export const createAppServer = (options: AppServerOptions = {}) => {
-  const rootPath = options.rootPath ?? resolveContextSidecarRootPathFromProcessEnv({ env: process.env });
+  const rootPath = options.rootPath ?? resolveContextSidecarRootPathFromProcessEnv();
   fs.mkdirSync(rootPath, { recursive: true });
   const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : resolveProviderConfigFromProcessEnv();
   const engine = new SynthKitEngine({ rootPath, provider });
