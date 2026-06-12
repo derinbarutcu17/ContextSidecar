@@ -1,4 +1,22 @@
 import crypto from "node:crypto";
+import path from "node:path";
+
+export const DEFAULT_CONTEXT_SIDECAR_DIR = ".context-sidecar";
+
+export interface ResolveContextSidecarRootPathInput {
+  rootPath?: string | undefined;
+  envRootPath?: string | null | undefined;
+  cwd?: string | undefined;
+  defaultDir?: string | undefined;
+}
+
+export const resolveContextSidecarRootPath = (input: ResolveContextSidecarRootPathInput = {}) =>
+  path.resolve(
+    input.rootPath
+      ?? input.envRootPath
+      ?? path.join(input.cwd ?? process.cwd(), input.defaultDir ?? DEFAULT_CONTEXT_SIDECAR_DIR)
+  );
+
 export const normalizeWhitespace = (text: string) =>
   text
     .replace(/\r\n/g, "\n")

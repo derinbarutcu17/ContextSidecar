@@ -1,6 +1,5 @@
 import http from "node:http";
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -15,6 +14,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
 import { ProviderConfigSchema } from "@context-sidecar/providers";
+import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
 import { z } from "zod";
 
 const ProjectCreateSchema = z.object({
@@ -56,7 +56,10 @@ export interface McpServerOptions {
 }
 
 export const createMcpServer = (options: McpServerOptions = {}) => {
-  const rootPath = options.rootPath ?? process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar");
+  const rootPath = resolveContextSidecarRootPath({
+    rootPath: options.rootPath,
+    envRootPath: process.env.CONTEXT_SIDECAR_HOME
+  });
   const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : parseProviderEnv();
   const engine = new SynthKitEngine({ rootPath, provider });
   const contextService = createContextSidecarService(rootPath);

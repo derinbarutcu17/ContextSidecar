@@ -6,10 +6,15 @@ import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/co
 import { startApiServer } from "@context-sidecar/api";
 import { startMcpHttpServer, startMcpServer } from "@context-sidecar/mcp";
 import { ProviderConfigSchema } from "@context-sidecar/providers";
+import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
 
 const program = new Command();
 program.name("context-sidecar").description("Local-first agent context sidecar").version("0.1.0");
-program.option("--root <path>", "workspace root path", process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar"));
+program.option(
+  "--root <path>",
+  "workspace root path",
+  resolveContextSidecarRootPath({ envRootPath: process.env.CONTEXT_SIDECAR_HOME })
+);
 program.option("--json", "emit JSON only", false);
 
 const markdownExtensions = new Set([".md", ".markdown", ".mdx"]);
@@ -223,7 +228,7 @@ program
   .command("init")
   .description("Initialize a workspace and print the default project path")
   .action(() => {
-    const rootPath = process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar");
+    const rootPath = resolveContextSidecarRootPath({ envRootPath: process.env.CONTEXT_SIDECAR_HOME });
     fs.mkdirSync(rootPath, { recursive: true });
     output({ ok: true, rootPath });
   });
@@ -231,7 +236,14 @@ program
 program
   .command("demo")
   .description("Seed a throwaway workspace and print a sample context pack")
-  .option("--workspace <path>", "demo workspace path", process.env.CONTEXT_SIDECAR_DEMO_HOME ?? path.join(process.cwd(), ".context-sidecar-demo"))
+  .option(
+    "--workspace <path>",
+    "demo workspace path",
+    resolveContextSidecarRootPath({
+      envRootPath: process.env.CONTEXT_SIDECAR_DEMO_HOME,
+      defaultDir: ".context-sidecar-demo"
+    })
+  )
   .option("--namespace <namespace>", "demo namespace", "project:demo")
   .action(async function (this: Command) {
     const opts = this.optsWithGlobals() as Record<string, string | boolean>;

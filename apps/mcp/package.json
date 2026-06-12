@@ -28,6 +28,7 @@
     "@context-sidecar/core": "workspace:*",
     "@context-sidecar/domain": "workspace:*",
     "@context-sidecar/providers": "workspace:*",
+    "@context-sidecar/shared": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

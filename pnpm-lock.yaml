@@ -109,6 +109,9 @@ importers:
       '@context-sidecar/providers':
         specifier: workspace:*
         version: link:../../packages/providers
+      '@context-sidecar/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@modelcontextprotocol/sdk':
         specifier: ^1.17.0
         version: 1.29.0(zod@4.3.6)

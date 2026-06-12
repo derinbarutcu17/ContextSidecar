@@ -23,6 +23,7 @@ import {
 } from "@context-sidecar/domain";
 import { createContextSidecarService, SynthKitEngine, type SynthKitConfig } from "@context-sidecar/core";
 import { ProviderConfigSchema } from "@context-sidecar/providers";
+import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
 import { z } from "zod";
 import { apiRouteDefinitions, routeSchemas } from "./routes.js";
 
@@ -75,7 +76,10 @@ export interface AppServerOptions {
 }
 
 export const createAppServer = (options: AppServerOptions = {}) => {
-  const rootPath = options.rootPath ?? process.env.CONTEXT_SIDECAR_HOME ?? path.join(process.cwd(), ".context-sidecar");
+  const rootPath = resolveContextSidecarRootPath({
+    rootPath: options.rootPath,
+    envRootPath: process.env.CONTEXT_SIDECAR_HOME
+  });
   fs.mkdirSync(rootPath, { recursive: true });
   const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : parseProviderEnv();
   const engine = new SynthKitEngine({ rootPath, provider });
