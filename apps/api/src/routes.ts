@@ -2,7 +2,10 @@ import { z } from "zod";
 import {
   CapabilityManifestV1Schema,
   CitationV1Schema,
+  ContextItemCreateV1Schema,
   ContextItemV1Schema,
+  ContextItemSearchV1Schema,
+  ContextItemUpdateV1Schema,
   ContextPackRequestV1Schema,
   ContextPackV1Schema,
   ContradictionV1Schema,
@@ -78,10 +81,6 @@ const revisionRequest = z.object({
 });
 
 const exportRequest = z.object({ format: z.enum(["markdown", "json"]) });
-const contextCreateRequest = ContextItemV1Schema.omit({ id: true, created_at: true, updated_at: true });
-const contextUpdateRequest = z.object({ content: z.string().min(1).optional(), priority: z.number().optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional(), expires_at: z.string().datetime({ offset: true }).nullable().optional(), tags: z.array(z.string()).optional(), metadata: z.record(z.string(), z.unknown()).optional() });
-const contextSearchRequest = z.object({ namespace: z.string().min(1), query: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]).optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional() });
-
 export type RouteMethod = "get" | "post" | "patch";
 
 export interface RouteDefinition {
@@ -96,11 +95,11 @@ export interface RouteDefinition {
 
 export const apiRouteDefinitions: RouteDefinition[] = [
   { method: "get", path: "/health", summary: "Health check", responses: { 200: ResponseEnvelopeSchema(z.object({ status: z.literal("ok"), rootPath: z.string() })) }, handlerName: "health" },
-  { method: "post", path: "/context", summary: "Create context item", requestBody: contextCreateRequest, responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "contextCreate" },
-  { method: "patch", path: "/context/:id", summary: "Update context item", parameters: [{ name: "id", in: "path", required: true, schema: z.string() }], requestBody: contextUpdateRequest, responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema), 400: ErrorEnvelopeSchema, 404: ErrorEnvelopeSchema }, handlerName: "contextUpdate" },
+  { method: "post", path: "/context", summary: "Create context item", requestBody: ContextItemCreateV1Schema, responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "contextCreate" },
+  { method: "patch", path: "/context/:id", summary: "Update context item", parameters: [{ name: "id", in: "path", required: true, schema: z.string() }], requestBody: ContextItemUpdateV1Schema, responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema), 400: ErrorEnvelopeSchema, 404: ErrorEnvelopeSchema }, handlerName: "contextUpdate" },
   { method: "get", path: "/context/:id", summary: "Get context item", parameters: [{ name: "id", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema), 404: ErrorEnvelopeSchema }, handlerName: "contextGet" },
   { method: "get", path: "/context", summary: "List context items", responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema.array()), 400: ErrorEnvelopeSchema }, handlerName: "contextList" },
-  { method: "post", path: "/context/search", summary: "Search context items", requestBody: contextSearchRequest, responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema.array()), 400: ErrorEnvelopeSchema }, handlerName: "contextSearch" },
+  { method: "post", path: "/context/search", summary: "Search context items", requestBody: ContextItemSearchV1Schema, responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema.array()), 400: ErrorEnvelopeSchema }, handlerName: "contextSearch" },
   { method: "post", path: "/context/pack", summary: "Build context pack", requestBody: ContextPackRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(ContextPackV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "contextPack" },
   { method: "post", path: "/context/:id/archive", summary: "Archive context item", parameters: [{ name: "id", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema), 404: ErrorEnvelopeSchema }, handlerName: "contextArchive" },
   { method: "post", path: "/context/:id/pin", summary: "Pin context item", parameters: [{ name: "id", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(ContextItemV1Schema), 404: ErrorEnvelopeSchema }, handlerName: "contextPin" },
@@ -140,9 +139,9 @@ export const routeSchemas = {
   synthesisRequest,
   revisionRequest,
   exportRequest,
-  contextCreateRequest,
-  contextUpdateRequest,
-  contextSearchRequest,
+  contextCreateRequest: ContextItemCreateV1Schema,
+  contextUpdateRequest: ContextItemUpdateV1Schema,
+  contextSearchRequest: ContextItemSearchV1Schema,
   responseEnvelope: ResponseEnvelopeSchema,
   errorEnvelope: ErrorEnvelopeSchema
 };

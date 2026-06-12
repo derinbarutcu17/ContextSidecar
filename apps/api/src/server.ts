@@ -7,6 +7,10 @@ import {
   ConfidenceReportV1Schema,
   CapabilityManifestV1Schema,
   ContextItemV1Schema,
+  ContextItemCreateV1Schema,
+  ContextItemListV1Schema,
+  ContextItemSearchV1Schema,
+  ContextItemUpdateV1Schema,
   ContextPackRequestV1Schema,
   ContradictionV1Schema,
   DraftV1Schema,
@@ -97,8 +101,21 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   app.get("/health", async () => ok({ status: "ok", rootPath }));
   app.post("/context", async (request, reply) => {
     try {
-      const body = ContextItemV1Schema.omit({ id: true, created_at: true, updated_at: true }).parse(request.body);
-      return ok(contextService.addItem(body));
+      const body = ContextItemCreateV1Schema.parse(request.body);
+      return ok(
+        contextService.addItem({
+          namespace: body.namespace,
+          item_type: body.item_type,
+          content: body.content,
+          source_type: body.source_type,
+          ...(body.source_reference !== undefined ? { source_reference: body.source_reference } : {}),
+          ...(body.priority !== undefined ? { priority: body.priority } : {}),
+          ...(body.status !== undefined ? { status: body.status } : {}),
+          ...(body.expires_at !== undefined ? { expires_at: body.expires_at } : {}),
+          ...(body.tags !== undefined ? { tags: body.tags } : {}),
+          ...(body.metadata !== undefined ? { metadata: body.metadata } : {})
+        })
+      );
     } catch (error) {
       reply.code(400);
       return fail(error);
@@ -107,7 +124,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   app.patch("/context/:id", async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
-      const body = z.object({ content: z.string().min(1).optional(), priority: z.number().optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional(), expires_at: z.string().datetime({ offset: true }).nullable().optional(), tags: z.array(z.string()).optional(), metadata: z.record(z.string(), z.unknown()).optional() }).parse(request.body);
+      const body = ContextItemUpdateV1Schema.parse(request.body);
       return ok(contextService.updateItem(id, { ...(body.content !== undefined ? { content: body.content } : {}), ...(body.priority !== undefined ? { priority: body.priority } : {}), ...(body.status !== undefined ? { status: body.status } : {}), ...(body.expires_at !== undefined ? { expires_at: body.expires_at } : {}), ...(body.tags !== undefined ? { tags: body.tags } : {}), ...(body.metadata !== undefined ? { metadata: body.metadata } : {}) }));
     } catch (error) {
       reply.code(error instanceof Error && error.message.includes("not found") ? 404 : 400);
@@ -119,13 +136,13 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   });
   app.get("/context", async (request, reply) => {
     try {
-      const query = z.object({ namespace: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]).optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional(), tag: z.string().optional() }).parse(request.query);
+      const query = ContextItemListV1Schema.parse(request.query);
       return ok(contextService.listItems({ namespace: query.namespace, ...(query.item_type !== undefined ? { item_type: query.item_type } : {}), ...(query.status !== undefined ? { status: query.status } : {}), ...(query.tag !== undefined ? { tag: query.tag } : {}) }));
     } catch (error) { reply.code(400); return fail(error); }
   });
   app.post("/context/search", async (request, reply) => {
     try {
-      const body = z.object({ namespace: z.string().min(1), query: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]).optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional() }).parse(request.body);
+      const body = ContextItemSearchV1Schema.parse(request.body);
       return ok(contextService.searchItems({ namespace: body.namespace, query: body.query, ...(body.item_type !== undefined ? { item_type: body.item_type } : {}), ...(body.status !== undefined ? { status: body.status } : {}) }));
     } catch (error) { reply.code(400); return fail(error); }
   });

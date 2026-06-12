@@ -300,6 +300,42 @@ export const ContextItemV1Schema = z.strictObject({
   metadata: z.record(z.string(), z.unknown())
 });
 
+export const ContextItemCreateV1Schema = z.object({
+  namespace: z.string().min(1),
+  item_type: ContextItemTypeSchema,
+  content: z.string().min(1),
+  source_type: SourceTypeSchema,
+  source_reference: z.string().nullable().optional(),
+  priority: z.number().optional(),
+  status: ContextStatusSchema.optional(),
+  expires_at: z.string().datetime({ offset: true }).nullable().optional(),
+  tags: z.array(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const ContextItemUpdateV1Schema = z.object({
+  content: z.string().min(1).optional(),
+  priority: z.number().optional(),
+  status: ContextStatusSchema.optional(),
+  expires_at: z.string().datetime({ offset: true }).nullable().optional(),
+  tags: z.array(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const ContextItemListV1Schema = z.object({
+  namespace: z.string().min(1),
+  item_type: ContextItemTypeSchema.optional(),
+  status: ContextStatusSchema.optional(),
+  tag: z.string().optional()
+});
+
+export const ContextItemSearchV1Schema = z.object({
+  namespace: z.string().min(1),
+  query: z.string().min(1),
+  item_type: ContextItemTypeSchema.optional(),
+  status: ContextStatusSchema.optional()
+});
+
 export const ContextPackRequestV1Schema = z.strictObject({
   namespace: z.string().min(1),
   task_query: z.string().nullable(),
@@ -377,6 +413,10 @@ export type ContextItemType = z.infer<typeof ContextItemTypeSchema>;
 export type SourceType = z.infer<typeof SourceTypeSchema>;
 export type ContextStatus = z.infer<typeof ContextStatusSchema>;
 export type ContextItemV1 = z.infer<typeof ContextItemV1Schema>;
+export type ContextItemCreateV1 = z.infer<typeof ContextItemCreateV1Schema>;
+export type ContextItemUpdateV1 = z.infer<typeof ContextItemUpdateV1Schema>;
+export type ContextItemListV1 = z.infer<typeof ContextItemListV1Schema>;
+export type ContextItemSearchV1 = z.infer<typeof ContextItemSearchV1Schema>;
 export type ContextPackRequestV1 = z.infer<typeof ContextPackRequestV1Schema>;
 export type ContextPackEntryV1 = z.infer<typeof ContextPackEntryV1Schema>;
 export type ContextPackV1 = z.infer<typeof ContextPackV1Schema>;

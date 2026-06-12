@@ -12,6 +12,12 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
+import {
+  ContextItemCreateV1Schema,
+  ContextItemListV1Schema,
+  ContextItemSearchV1Schema,
+  ContextItemUpdateV1Schema
+} from "@context-sidecar/domain";
 import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
 import { ProviderConfigSchema, resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
 import { resolveContextSidecarRootPathFromProcessEnv, resolveServerListenOptionsFromProcessEnv } from "@context-sidecar/shared";
@@ -106,16 +112,16 @@ export const createMcpServer = (options: McpServerOptions = {}) => {
     try {
       switch (name) {
         case "context_add": {
-          const body = z.object({ namespace: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]), content: z.string().min(1), source_type: z.enum(["user_message", "file", "url", "manual_entry", "system_note"]), source_reference: z.string().nullable().optional(), priority: z.number().optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional(), expires_at: z.string().datetime({ offset: true }).nullable().optional(), tags: z.array(z.string()).optional(), metadata: z.record(z.string(), z.unknown()).optional() }).parse(args ?? {});
+          const body = ContextItemCreateV1Schema.parse(args ?? {});
           return textResult(contextService.addItem({ namespace: body.namespace, item_type: body.item_type, content: body.content, source_type: body.source_type, ...(body.source_reference !== undefined ? { source_reference: body.source_reference } : {}), ...(body.priority !== undefined ? { priority: body.priority } : {}), ...(body.status !== undefined ? { status: body.status } : {}), ...(body.expires_at !== undefined ? { expires_at: body.expires_at } : {}), ...(body.tags !== undefined ? { tags: body.tags } : {}), ...(body.metadata !== undefined ? { metadata: body.metadata } : {}) }));
         }
         case "context_update": {
-          const body = z.object({ id: z.string().min(1), content: z.string().min(1).optional(), priority: z.number().optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional(), expires_at: z.string().datetime({ offset: true }).nullable().optional(), tags: z.array(z.string()).optional(), metadata: z.record(z.string(), z.unknown()).optional() }).parse(args ?? {});
+          const body = z.object({ id: z.string().min(1) }).merge(ContextItemUpdateV1Schema).parse(args ?? {});
           return textResult(contextService.updateItem(body.id, { ...(body.content !== undefined ? { content: body.content } : {}), ...(body.priority !== undefined ? { priority: body.priority } : {}), ...(body.status !== undefined ? { status: body.status } : {}), ...(body.expires_at !== undefined ? { expires_at: body.expires_at } : {}), ...(body.tags !== undefined ? { tags: body.tags } : {}), ...(body.metadata !== undefined ? { metadata: body.metadata } : {}) }));
         }
         case "context_get": return textResult(contextService.getItem(z.object({ id: z.string().min(1) }).parse(args ?? {}).id));
         case "context_list": {
-          const body = z.object({ namespace: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]).optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional(), tag: z.string().optional() }).parse(args ?? {});
+          const body = ContextItemListV1Schema.parse(args ?? {});
           return textResult(contextService.listItems({ namespace: body.namespace, ...(body.item_type !== undefined ? { item_type: body.item_type } : {}), ...(body.status !== undefined ? { status: body.status } : {}), ...(body.tag !== undefined ? { tag: body.tag } : {}) }));
         }
         case "context_list_namespaces": {
@@ -126,7 +132,7 @@ export const createMcpServer = (options: McpServerOptions = {}) => {
           return textResult(contextService.listNamespaces());
         }
         case "context_search": {
-          const body = z.object({ namespace: z.string().min(1), query: z.string().min(1), item_type: z.enum(["preference", "profile_fact", "project_fact", "task_note", "pinned_instruction", "workflow_note"]).optional(), status: z.enum(["active", "pinned", "archived", "expired"]).optional() }).parse(args ?? {});
+          const body = ContextItemSearchV1Schema.parse(args ?? {});
           return textResult(contextService.searchItems({ namespace: body.namespace, query: body.query, ...(body.item_type !== undefined ? { item_type: body.item_type } : {}), ...(body.status !== undefined ? { status: body.status } : {}) }));
         }
         case "context_pack": {
