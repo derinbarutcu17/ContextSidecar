@@ -291,18 +291,20 @@ program.command("serve").description("Start local servers").addCommand(
     await startMcpServer({ rootPath: opts.root });
   })
 ).addCommand(
-  new Command("mcp-http")
-    .option("--port <port>", "HTTP port", String(resolveServerListenOptions({ env: process.env, defaultPort: 8788 }).port))
-    .option("--host <host>", "HTTP host", resolveServerListenOptions({ env: process.env, defaultPort: 8788 }).host)
-    .action(async function (this: Command) {
-      const opts = this.optsWithGlobals() as { root: string; port: string; host: string };
-      const listenDefaults = resolveServerListenOptions({ env: process.env, defaultPort: 8788 });
-      await startMcpHttpServer({
-        rootPath: opts.root,
-        host: opts.host ?? listenDefaults.host,
-        port: Number(opts.port ?? listenDefaults.port)
+  (() => {
+    const listenDefaults = resolveServerListenOptions({ env: process.env, defaultPort: 8788 });
+    return new Command("mcp-http")
+      .option("--port <port>", "HTTP port", String(listenDefaults.port))
+      .option("--host <host>", "HTTP host", listenDefaults.host)
+      .action(async function (this: Command) {
+        const opts = this.optsWithGlobals() as { root: string; port: string; host: string };
+        await startMcpHttpServer({
+          rootPath: opts.root,
+          host: opts.host ?? listenDefaults.host,
+          port: Number(opts.port ?? listenDefaults.port)
+        });
       });
-    })
+  })()
 );
 
 contextCommand
