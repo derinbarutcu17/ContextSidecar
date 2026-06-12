@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PATH="$SCRIPT_DIR:$PATH"
+case "${1:-}" in
+  setup|doctor|demo|dev|dev:api|dev:mcp|check|bootstrap|serve:api|serve:mcp|context|eval|test|typecheck|build|lint)
+    exec corepack pnpm run "$@"
+    ;;
+esac
 exec corepack pnpm "$@"
