@@ -6,7 +6,7 @@ import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/co
 import { startApiServer } from "@context-sidecar/api";
 import { startMcpHttpServer, startMcpServer } from "@context-sidecar/mcp";
 import { resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
-import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
+import { resolveContextSidecarRootPath, resolveServerListenOptions } from "@context-sidecar/shared";
 
 const program = new Command();
 program.name("context-sidecar").description("Local-first agent context sidecar").version("0.1.0");
@@ -292,14 +292,15 @@ program.command("serve").description("Start local servers").addCommand(
   })
 ).addCommand(
   new Command("mcp-http")
-    .option("--port <port>", "HTTP port", process.env.PORT ?? "8788")
-    .option("--host <host>", "HTTP host", process.env.HOST ?? "127.0.0.1")
+    .option("--port <port>", "HTTP port", String(resolveServerListenOptions({ env: process.env, defaultPort: 8788 }).port))
+    .option("--host <host>", "HTTP host", resolveServerListenOptions({ env: process.env, defaultPort: 8788 }).host)
     .action(async function (this: Command) {
       const opts = this.optsWithGlobals() as { root: string; port: string; host: string };
+      const listenDefaults = resolveServerListenOptions({ env: process.env, defaultPort: 8788 });
       await startMcpHttpServer({
         rootPath: opts.root,
-        host: opts.host,
-        port: Number(opts.port)
+        host: opts.host ?? listenDefaults.host,
+        port: Number(opts.port ?? listenDefaults.port)
       });
     })
 );

@@ -14,7 +14,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
 import { ProviderConfigSchema, resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
-import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
+import { resolveContextSidecarRootPath, resolveServerListenOptions } from "@context-sidecar/shared";
 import { z } from "zod";
 
 const ProjectCreateSchema = z.object({
@@ -408,8 +408,9 @@ export interface McpHttpServerOptions extends McpServerOptions {
 
 export const startMcpHttpServer = async (options: McpHttpServerOptions = {}) => {
   const state = createMcpServer(options);
-  const host = options.host ?? process.env.HOST ?? "127.0.0.1";
-  const port = options.port ?? Number(process.env.PORT ?? 8788);
+  const listenOptions = resolveServerListenOptions({ env: process.env, defaultPort: 8788 });
+  const host = options.host ?? listenOptions.host;
+  const port = options.port ?? listenOptions.port;
   const routePath = options.path ?? "/mcp";
   const transport = new StreamableHTTPServerTransport({
     enableJsonResponse: true,

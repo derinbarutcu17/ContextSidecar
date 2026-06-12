@@ -23,7 +23,7 @@ import {
 } from "@context-sidecar/domain";
 import { createContextSidecarService, SynthKitEngine, type SynthKitConfig } from "@context-sidecar/core";
 import { ProviderConfigSchema, resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
-import { resolveContextSidecarRootPath } from "@context-sidecar/shared";
+import { resolveContextSidecarRootPath, resolveServerListenOptions } from "@context-sidecar/shared";
 import { z } from "zod";
 import { apiRouteDefinitions, routeSchemas } from "./routes.js";
 
@@ -358,8 +358,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
 
 export const startApiServer = async (options: AppServerOptions = {}) => {
   const server = createAppServer(options);
-  const port = Number(process.env.PORT ?? 8787);
-  const host = process.env.HOST ?? "127.0.0.1";
+  const { host, port } = resolveServerListenOptions({ env: process.env, defaultPort: 8787 });
   await server.app.listen({ port, host });
   return server;
 };

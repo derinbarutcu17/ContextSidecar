@@ -17,6 +17,17 @@ export const resolveContextSidecarRootPath = (input: ResolveContextSidecarRootPa
       ?? path.join(input.cwd ?? process.cwd(), input.defaultDir ?? DEFAULT_CONTEXT_SIDECAR_DIR)
   );
 
+export interface ResolveServerListenOptionsInput {
+  env?: NodeJS.ProcessEnv | undefined;
+  defaultHost?: string | undefined;
+  defaultPort?: number | undefined;
+}
+
+export const resolveServerListenOptions = (input: ResolveServerListenOptionsInput = {}) => ({
+  host: input.env?.HOST ?? input.defaultHost ?? "127.0.0.1",
+  port: Number(input.env?.PORT ?? input.defaultPort ?? 8787)
+});
+
 export const normalizeWhitespace = (text: string) =>
   text
     .replace(/\r\n/g, "\n")
