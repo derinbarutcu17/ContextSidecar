@@ -58,4 +58,51 @@ describe("API server", () => {
     expect((await server.app.inject({ method: "POST", url: `/context/${createdBody.data.id}/pin` })).statusCode).toBe(200);
     expect((await server.app.inject({ method: "POST", url: `/context/${createdBody.data.id}/archive` })).statusCode).toBe(200);
   });
+
+  it("requires an API token when the server is exposed beyond loopback", async () => {
+    const server = createAppServer({
+      rootPath: "./.tmp-api-test-auth",
+      provider: { kind: "mock", seed: "auth" },
+      listenHost: "0.0.0.0",
+      apiToken: "super-secret-token"
+    });
+    servers.push(server);
+    const denied = await server.app.inject({
+      method: "POST",
+      url: "/v1/projects",
+      payload: { name: "Denied" }
+    });
+    expect(denied.statusCode).toBe(401);
+    const allowed = await server.app.inject({
+      method: "POST",
+      url: "/v1/projects",
+      headers: {
+        authorization: "Bearer super-secret-token"
+      },
+      payload: { name: "Allowed" }
+    });
+    expect(allowed.statusCode).toBe(200);
+  });
+
+  it("rejects file paths outside the workspace root through the API", async () => {
+    const server = createAppServer({ rootPath: "./.tmp-api-test-paths", provider: { kind: "mock", seed: "paths" } });
+    servers.push(server);
+    const project = await server.app.inject({
+      method: "POST",
+      url: "/v1/projects",
+      payload: { name: "Paths" }
+    });
+    expect(project.statusCode).toBe(200);
+    const projectId = (project.json() as { data: { id: string } }).data.id;
+    const outsidePath = "/tmp/contextsidecar-outside.pdf";
+    const response = await server.app.inject({
+      method: "POST",
+      url: `/v1/projects/${projectId}/ingest/pdf`,
+      payload: { filePath: outsidePath, title: "Outside PDF" }
+    });
+    expect(response.statusCode).toBe(400);
+    const body = response.json() as { ok: boolean; error: { message: string } };
+    expect(body.ok).toBe(false);
+    expect(body.error.message).toMatch(/workspace root/i);
+  });
 });

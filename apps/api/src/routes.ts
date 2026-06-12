@@ -11,9 +11,16 @@ import {
   ContradictionV1Schema,
   DraftV1Schema,
   ExportArtifactV1Schema,
+  ExportRequestV1Schema,
+  CreateProjectRequestV1Schema,
+  IngestPathRequestV1Schema,
+  IngestTextRequestV1Schema,
+  IngestTranscriptRequestV1Schema,
+  IngestUrlRequestV1Schema,
   ProjectV1Schema,
   RevisionV1Schema,
-  SynthesisModeV1Schema
+  RevisionRequestV1Schema,
+  SynthesisRunRequestV1Schema
 } from "@context-sidecar/domain";
 
 const ResponseEnvelopeSchema = <T extends z.ZodTypeAny>(schema: T) =>
@@ -30,57 +37,6 @@ const ErrorEnvelopeSchema = z.object({
   })
 });
 
-const createProjectRequest = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  defaultMode: SynthesisModeV1Schema.optional()
-});
-
-const ingestTextRequest = z.object({
-  text: z.string().optional(),
-  markdown: z.string().optional(),
-  title: z.string().optional(),
-  provenance: z
-    .object({
-      sourceName: z.string().optional(),
-      sourceUri: z.string().nullable().optional(),
-      importedBy: z.string().optional()
-    })
-    .optional()
-});
-
-const ingestUrlRequest = z.object({
-  url: z.string().url(),
-  title: z.string().optional()
-});
-
-const ingestPathRequest = z.object({
-  filePath: z.string().min(1),
-  title: z.string().optional()
-});
-
-const ingestTranscriptRequest = z.object({
-  transcript: z.string(),
-  title: z.string().optional()
-});
-
-const synthesisRequest = z.object({
-  mode: SynthesisModeV1Schema,
-  title: z.string().min(1),
-  question: z.string().optional(),
-  audience: z.string().optional(),
-  desiredDirections: z.union([z.literal(2), z.literal(3)]).optional(),
-  sourceIds: z.array(z.string()).optional()
-});
-
-const revisionRequest = z.object({
-  sectionId: z.string().min(1),
-  body: z.string().min(1),
-  reason: z.string().min(1),
-  actor: z.string().optional()
-});
-
-const exportRequest = z.object({ format: z.enum(["markdown", "json"]) });
 export type RouteMethod = "get" | "post" | "patch";
 
 export interface RouteDefinition {
@@ -110,38 +66,38 @@ export const apiRouteDefinitions: RouteDefinition[] = [
   { method: "get", path: "/v1/capabilities", summary: "Capability manifest", responses: { 200: ResponseEnvelopeSchema(CapabilityManifestV1Schema) }, handlerName: "capabilitiesV1" },
   { method: "get", path: "/v1/openapi.json", summary: "OpenAPI document", responses: { 200: z.any() }, handlerName: "openapi" },
   { method: "get", path: "/v1/projects", summary: "List projects", responses: { 200: ResponseEnvelopeSchema(ProjectV1Schema.array()) }, handlerName: "listProjects" },
-  { method: "post", path: "/v1/projects", summary: "Create project", requestBody: createProjectRequest, responses: { 200: ResponseEnvelopeSchema(ProjectV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "createProject" },
+  { method: "post", path: "/v1/projects", summary: "Create project", requestBody: CreateProjectRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(ProjectV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "createProject" },
   { method: "get", path: "/v1/projects/:projectId", summary: "Get project", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(ProjectV1Schema), 404: ErrorEnvelopeSchema }, handlerName: "getProject" },
-  { method: "post", path: "/v1/projects/:projectId/ingest/text", summary: "Ingest text", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: ingestTextRequest, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestText" },
-  { method: "post", path: "/v1/projects/:projectId/ingest/markdown", summary: "Ingest markdown", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: ingestTextRequest, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestMarkdown" },
-  { method: "post", path: "/v1/projects/:projectId/ingest/url", summary: "Ingest URL", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: ingestUrlRequest, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestUrl" },
-  { method: "post", path: "/v1/projects/:projectId/ingest/pdf", summary: "Ingest PDF", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: ingestPathRequest, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestPdf" },
-  { method: "post", path: "/v1/projects/:projectId/ingest/image", summary: "Ingest image", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: ingestPathRequest, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestImage" },
-  { method: "post", path: "/v1/projects/:projectId/ingest/transcript", summary: "Ingest transcript", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: ingestTranscriptRequest, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestTranscript" },
-  { method: "post", path: "/v1/projects/:projectId/synthesize", summary: "Run synthesis", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: synthesisRequest, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "synthesize" },
+  { method: "post", path: "/v1/projects/:projectId/ingest/text", summary: "Ingest text", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: IngestTextRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestText" },
+  { method: "post", path: "/v1/projects/:projectId/ingest/markdown", summary: "Ingest markdown", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: IngestTextRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestMarkdown" },
+  { method: "post", path: "/v1/projects/:projectId/ingest/url", summary: "Ingest URL", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: IngestUrlRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestUrl" },
+  { method: "post", path: "/v1/projects/:projectId/ingest/pdf", summary: "Ingest PDF", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: IngestPathRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestPdf" },
+  { method: "post", path: "/v1/projects/:projectId/ingest/image", summary: "Ingest image", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: IngestPathRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestImage" },
+  { method: "post", path: "/v1/projects/:projectId/ingest/transcript", summary: "Ingest transcript", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: IngestTranscriptRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "ingestTranscript" },
+  { method: "post", path: "/v1/projects/:projectId/synthesize", summary: "Run synthesis", parameters: [{ name: "projectId", in: "path", required: true, schema: z.string() }], requestBody: SynthesisRunRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(z.any()), 400: ErrorEnvelopeSchema }, handlerName: "synthesize" },
   { method: "get", path: "/v1/syntheses/:synthesisId", summary: "Get draft", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(DraftV1Schema), 404: ErrorEnvelopeSchema }, handlerName: "getSynthesis" },
   { method: "get", path: "/v1/syntheses/:synthesisId/draft", summary: "Get synthesis draft", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(DraftV1Schema), 404: ErrorEnvelopeSchema }, handlerName: "getDraft" },
   { method: "get", path: "/v1/syntheses/:synthesisId/citations", summary: "Get citations", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(CitationV1Schema.array()) }, handlerName: "getCitations" },
   { method: "get", path: "/v1/syntheses/:synthesisId/contradictions", summary: "Get contradictions", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(ContradictionV1Schema.array()) }, handlerName: "getContradictions" },
   { method: "get", path: "/v1/syntheses/:synthesisId/revisions", summary: "Get revisions", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(RevisionV1Schema.array()) }, handlerName: "getRevisions" },
-  { method: "post", path: "/v1/syntheses/:synthesisId/revisions", summary: "Revise a section", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], requestBody: revisionRequest, responses: { 200: ResponseEnvelopeSchema(RevisionV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "reviseSection" },
+  { method: "post", path: "/v1/syntheses/:synthesisId/revisions", summary: "Revise a section", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], requestBody: RevisionRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(RevisionV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "reviseSection" },
   { method: "get", path: "/v1/syntheses/:synthesisId/export", summary: "List export artifacts", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(ExportArtifactV1Schema.array()) }, handlerName: "listExports" },
-  { method: "post", path: "/v1/syntheses/:synthesisId/export", summary: "Export synthesis", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], requestBody: exportRequest, responses: { 200: ResponseEnvelopeSchema(ExportArtifactV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "exportSynthesis" },
+  { method: "post", path: "/v1/syntheses/:synthesisId/export", summary: "Export synthesis", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], requestBody: ExportRequestV1Schema, responses: { 200: ResponseEnvelopeSchema(ExportArtifactV1Schema), 400: ErrorEnvelopeSchema }, handlerName: "exportSynthesis" },
   { method: "get", path: "/v1/syntheses/:synthesisId/stages", summary: "Get synthesis stages", parameters: [{ name: "synthesisId", in: "path", required: true, schema: z.string() }], responses: { 200: ResponseEnvelopeSchema(z.array(z.any())), 404: ErrorEnvelopeSchema }, handlerName: "getStages" }
 ];
 
 export const routeSchemas = {
-  createProjectRequest,
-  ingestTextRequest,
-  ingestUrlRequest,
-  ingestPathRequest,
-  ingestTranscriptRequest,
-  synthesisRequest,
-  revisionRequest,
-  exportRequest,
   contextCreateRequest: ContextItemCreateV1Schema,
   contextUpdateRequest: ContextItemUpdateV1Schema,
   contextSearchRequest: ContextItemSearchV1Schema,
+  createProjectRequest: CreateProjectRequestV1Schema,
+  ingestTextRequest: IngestTextRequestV1Schema,
+  ingestUrlRequest: IngestUrlRequestV1Schema,
+  ingestPathRequest: IngestPathRequestV1Schema,
+  ingestTranscriptRequest: IngestTranscriptRequestV1Schema,
+  synthesisRequest: SynthesisRunRequestV1Schema,
+  revisionRequest: RevisionRequestV1Schema,
+  exportRequest: ExportRequestV1Schema,
   responseEnvelope: ResponseEnvelopeSchema,
   errorEnvelope: ErrorEnvelopeSchema
 };

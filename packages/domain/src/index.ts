@@ -364,6 +364,76 @@ export const ContextPackV1Schema = z.strictObject({
   rendered_text: z.string().min(1)
 });
 
+export const IngestTextRequestV1Schema = z.object({
+  text: z.string().optional(),
+  markdown: z.string().optional(),
+  title: z.string().optional(),
+  provenance: z
+    .object({
+      sourceName: z.string().optional(),
+      sourceUri: z.string().nullable().optional(),
+      importedBy: z.string().optional()
+    })
+    .optional()
+});
+
+export const IngestUrlRequestV1Schema = z.object({
+  url: z.string().url(),
+  title: z.string().optional()
+});
+
+export const IngestPathRequestV1Schema = z.object({
+  filePath: z.string().min(1),
+  title: z.string().optional()
+});
+
+export const IngestTranscriptRequestV1Schema = z.object({
+  transcript: z.string(),
+  title: z.string().optional()
+});
+
+export const SynthesisRunRequestV1Schema = z.object({
+  mode: SynthesisModeV1Schema,
+  title: z.string().min(1),
+  question: z.string().optional(),
+  audience: z.string().optional(),
+  desiredDirections: z.union([z.literal(2), z.literal(3)]).optional(),
+  sourceIds: z.array(z.string()).optional()
+});
+
+export const RevisionRequestV1Schema = z.object({
+  sectionId: z.string().min(1),
+  body: z.string().min(1),
+  reason: z.string().min(1),
+  actor: z.string().optional()
+});
+
+export const ExportRequestV1Schema = z.object({
+  format: z.enum(["markdown", "json"])
+});
+
+export const CreateProjectRequestV1Schema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  defaultMode: SynthesisModeV1Schema.optional()
+});
+
+export const ProjectIngestTextRequestV1Schema = IngestTextRequestV1Schema.extend({
+  projectId: z.string().min(1)
+});
+
+export const ProjectIngestUrlRequestV1Schema = IngestUrlRequestV1Schema.extend({
+  projectId: z.string().min(1)
+});
+
+export const ProjectIngestPathRequestV1Schema = IngestPathRequestV1Schema.extend({
+  projectId: z.string().min(1)
+});
+
+export const ProjectSynthesisRequestV1Schema = SynthesisRunRequestV1Schema.extend({
+  projectId: z.string().min(1)
+});
+
 export const ProviderCapabilityV1Schema = z.enum([
   "text-generation",
   "embeddings",
@@ -420,6 +490,18 @@ export type ContextItemSearchV1 = z.infer<typeof ContextItemSearchV1Schema>;
 export type ContextPackRequestV1 = z.infer<typeof ContextPackRequestV1Schema>;
 export type ContextPackEntryV1 = z.infer<typeof ContextPackEntryV1Schema>;
 export type ContextPackV1 = z.infer<typeof ContextPackV1Schema>;
+export type CreateProjectRequestV1 = z.infer<typeof CreateProjectRequestV1Schema>;
+export type ProjectIngestTextRequestV1 = z.infer<typeof ProjectIngestTextRequestV1Schema>;
+export type ProjectIngestUrlRequestV1 = z.infer<typeof ProjectIngestUrlRequestV1Schema>;
+export type ProjectIngestPathRequestV1 = z.infer<typeof ProjectIngestPathRequestV1Schema>;
+export type ProjectSynthesisRequestV1 = z.infer<typeof ProjectSynthesisRequestV1Schema>;
+export type IngestTextRequestV1 = z.infer<typeof IngestTextRequestV1Schema>;
+export type IngestUrlRequestV1 = z.infer<typeof IngestUrlRequestV1Schema>;
+export type IngestPathRequestV1 = z.infer<typeof IngestPathRequestV1Schema>;
+export type IngestTranscriptRequestV1 = z.infer<typeof IngestTranscriptRequestV1Schema>;
+export type SynthesisRunRequestV1 = z.infer<typeof SynthesisRunRequestV1Schema>;
+export type RevisionRequestV1 = z.infer<typeof RevisionRequestV1Schema>;
+export type ExportRequestV1 = z.infer<typeof ExportRequestV1Schema>;
 export type CapabilityManifestV1 = z.infer<typeof CapabilityManifestV1Schema>;
 
 export const SynthKitErrorSchema = z.object({

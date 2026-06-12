@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import http from "node:http";
+import https from "node:https";
 import dns from "node:dns/promises";
 import net from "node:net";
 import path from "node:path";
@@ -23,6 +25,7 @@ const pdfParse: any = require("pdf-parse");
 export interface IngestContext {
   storage: SynthKitStorage;
   provider: SynthKitProvider;
+  rootPath: string;
 }
 
 export interface IngestInputBase {
@@ -139,6 +142,16 @@ const loadTextAsset = (sourceId: string, text: string, mimeType = "text/plain", 
     metadata: { lineCount: text.split("\n").length }
   });
 
+const resolveWorkspaceFilePath = (rootPath: string, filePath: string) => {
+  const resolvedRoot = path.resolve(rootPath);
+  const resolvedPath = path.isAbsolute(filePath) ? path.resolve(filePath) : path.resolve(resolvedRoot, filePath);
+  const relative = path.relative(resolvedRoot, resolvedPath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`File path must stay within the workspace root: ${filePath}`);
+  }
+  return resolvedPath;
+};
+
 export class SynthKitIngestor {
   constructor(private readonly context: IngestContext) {}
 
@@ -171,21 +184,19 @@ export class SynthKitIngestor {
       const saved = saveSourceSet(this.context.storage, source, [], []);
       return { ...saved, warnings: [blocked] };
     }
-    const fetched = await fetch(input.url);
+    const fetched = await fetchSafeHttpUrl(input.url);
     const warnings: string[] = [];
     if (!fetched.ok) {
       const fallback = createSourceRecord(input, "url", input.url, "failed", input.url);
       const saved = saveSourceSet(this.context.storage, fallback, [], []);
       return { ...saved, warnings: [`Fetch failed: ${fetched.status} ${fetched.statusText}`] };
     }
-    const contentType = fetched.headers.get("content-type") ?? "";
-    const body = await fetched.text();
-    const text = contentType.includes("html") ? stripHtml(body) : body;
+    const text = fetched.contentType.includes("html") ? stripHtml(fetched.body) : fetched.body;
     const normalizedText = normalize(text);
     const source = createSourceRecord(input, "url", normalizedText || input.url, normalizedText ? "medium" : "failed", input.url);
     const duplicateOf = this.findDuplicateSource(source);
     if (duplicateOf) source.metadata = { ...source.metadata, duplicateOf, duplicateCandidate: true };
-    const asset = loadTextAsset(source.id, normalizedText || input.url, contentType || "text/html", "extracted_text");
+    const asset = loadTextAsset(source.id, normalizedText || input.url, fetched.contentType || "text/html", "extracted_text");
     const chunks = chunkText(source.projectId, source.id, asset.id, normalizedText || input.url, source.extractionQuality, 1000);
     const saved = saveSourceSet(this.context.storage, source, [asset], chunks);
     return { ...saved, ...(duplicateOf ? { duplicateOf } : {}), warnings };
@@ -194,10 +205,11 @@ export class SynthKitIngestor {
   async ingestPdf(input: IngestInputBase & { filePath: string }): Promise<IngestResult> {
     const warnings: string[] = [];
     let raw = Buffer.alloc(0);
+    const resolvedPath = resolveWorkspaceFilePath(this.context.rootPath, input.filePath);
     try {
-      raw = fs.readFileSync(input.filePath);
+      raw = fs.readFileSync(resolvedPath);
     } catch {
-      const source = createSourceRecord(input, "pdf", input.filePath, "failed", input.filePath);
+      const source = createSourceRecord(input, "pdf", input.filePath, "failed", resolvedPath);
       const saved = saveSourceSet(this.context.storage, source, [], []);
       return { ...saved, warnings: ["Could not read PDF file"] };
     }
@@ -209,7 +221,7 @@ export class SynthKitIngestor {
     } catch (error) {
       warnings.push(`PDF parse failed: ${(error as Error).message}`);
     }
-    const source = createSourceRecord(input, "pdf", extracted || input.filePath, extracted ? "medium" : "failed", input.filePath);
+    const source = createSourceRecord(input, "pdf", extracted || resolvedPath, extracted ? "medium" : "failed", resolvedPath);
     const duplicateOf = this.findDuplicateSource(source);
     if (duplicateOf) source.metadata = { ...source.metadata, duplicateOf, duplicateCandidate: true };
     const asset = SourceAssetV1Schema.parse({
@@ -218,11 +230,11 @@ export class SynthKitIngestor {
       sourceId: source.id,
       kind: "raw",
       mimeType: "application/pdf",
-      uri: `file://${path.resolve(input.filePath)}`,
+      uri: `file://${resolvedPath}`,
       checksum: sha256(raw),
       byteSize: raw.byteLength,
       createdAt: new Date().toISOString(),
-      metadata: { filePath: input.filePath }
+      metadata: { filePath: resolvedPath }
     });
     const chunks = extracted
       ? chunkText(source.projectId, source.id, asset.id, extracted, source.extractionQuality, 950)
@@ -254,14 +266,15 @@ export class SynthKitIngestor {
   async ingestImage(input: IngestInputBase & { filePath: string }): Promise<IngestResult> {
     let bytes = Buffer.alloc(0);
     const warnings: string[] = [];
+    const resolvedPath = resolveWorkspaceFilePath(this.context.rootPath, input.filePath);
     try {
-      bytes = fs.readFileSync(input.filePath);
+      bytes = fs.readFileSync(resolvedPath);
     } catch {
-      const source = createSourceRecord(input, "image", input.filePath, "failed", input.filePath);
+      const source = createSourceRecord(input, "image", input.filePath, "failed", resolvedPath);
       const saved = saveSourceSet(this.context.storage, source, [], []);
       return { ...saved, warnings: ["Could not read image file"] };
     }
-    const source = createSourceRecord(input, "image", input.filePath, "low", input.filePath);
+    const source = createSourceRecord(input, "image", input.filePath, "low", resolvedPath);
     const duplicateOf = this.findDuplicateSource(source);
     if (duplicateOf) source.metadata = { ...source.metadata, duplicateOf, duplicateCandidate: true };
     let extracted = "";
@@ -271,7 +284,7 @@ export class SynthKitIngestor {
     } else {
       try {
         const ocr = await this.context.provider.ocr({
-          mimeType: guessMimeType(input.filePath),
+          mimeType: guessMimeType(resolvedPath),
           bytes,
           ...(input.title ? { hint: input.title } : {})
         });
@@ -287,12 +300,12 @@ export class SynthKitIngestor {
       id: createAssetId(source.id, "raw", sha256(bytes)),
       sourceId: source.id,
       kind: "raw",
-      mimeType: guessMimeType(input.filePath),
-      uri: `file://${path.resolve(input.filePath)}`,
+      mimeType: guessMimeType(resolvedPath),
+      uri: `file://${resolvedPath}`,
       checksum: sha256(bytes),
       byteSize: bytes.byteLength,
       createdAt: new Date().toISOString(),
-      metadata: { filePath: input.filePath, ocrTextLength: extracted.length }
+      metadata: { filePath: resolvedPath, ocrTextLength: extracted.length }
     });
     const ocrAsset = extracted
       ? loadTextAsset(source.id, extracted, "text/plain", "extracted_text")
@@ -311,6 +324,90 @@ export class SynthKitIngestor {
   }
 }
 
+interface SafeHttpFetchResult {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  contentType: string;
+  body: string;
+}
+
+const fetchSafeHttpUrl = async (url: string): Promise<SafeHttpFetchResult> => {
+  const parsed = new URL(url);
+  const hostname = parsed.hostname.toLowerCase();
+  const resolvedAddress = await resolvePublicHttpAddress(hostname);
+  return new Promise((resolve, reject) => {
+    const requestOptions = {
+      protocol: parsed.protocol,
+      hostname: resolvedAddress,
+      port: parsed.port ? Number(parsed.port) : undefined,
+      path: `${parsed.pathname}${parsed.search}`,
+      method: "GET",
+      headers: {
+        host: parsed.host,
+        accept: "text/html,application/xhtml+xml,application/xml,text/plain,*/*"
+      },
+      servername: parsed.hostname
+    };
+    const request = (parsed.protocol === "https:" ? https : http).request(requestOptions as http.RequestOptions, (response) => {
+      const status = response.statusCode ?? 0;
+      const statusText = response.statusMessage ?? "";
+      const contentType = String(response.headers["content-type"] ?? "");
+      const bodyChunks: Buffer[] = [];
+      response.on("data", (chunk) => bodyChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      response.on("end", () => {
+        const body = Buffer.concat(bodyChunks).toString("utf8");
+        if (status >= 300 && status < 400) {
+          resolve({
+            ok: false,
+            status,
+            statusText: "Redirects are not allowed",
+            contentType,
+            body
+          });
+          return;
+        }
+        resolve({
+          ok: status >= 200 && status < 300,
+          status,
+          statusText,
+          contentType,
+          body
+        });
+      });
+    });
+    request.on("error", reject);
+    request.end();
+  });
+};
+
+const resolvePublicHttpAddress = async (hostname: string) => {
+  if (hostname === "localhost" || hostname === "0.0.0.0" || hostname === "::1") {
+    throw new Error(`Blocked local URL host: ${hostname}`);
+  }
+  if (net.isIP(hostname) === 4) {
+    if (isPrivateIpv4(hostname)) {
+      throw new Error(`Blocked private IPv4 host: ${hostname}`);
+    }
+    return hostname;
+  }
+  if (net.isIP(hostname) === 6) {
+    if (isPrivateIpv6(hostname)) {
+      throw new Error(`Blocked private IPv6 host: ${hostname}`);
+    }
+    return hostname;
+  }
+  const records = await dns.lookup(hostname, { all: true, verbatim: true });
+  if (records.some((record) => isPrivateResolvedAddress(record.address))) {
+    throw new Error(`Blocked private resolved address for host: ${hostname}`);
+  }
+  const address = records[0]?.address;
+  if (!address) {
+    throw new Error(`Unable to resolve host: ${hostname}`);
+  }
+  return address;
+};
+
 const assertSafeHttpUrl = async (url: string) => {
   try {
     const parsed = new URL(url);
@@ -320,29 +417,10 @@ const assertSafeHttpUrl = async (url: string) => {
     if (parsed.username || parsed.password) {
       return "Blocked URL credentials";
     }
-    const hostname = parsed.hostname.toLowerCase();
-    if (hostname === "localhost" || hostname === "0.0.0.0" || hostname === "::1") {
-      return `Blocked local URL host: ${parsed.hostname}`;
-    }
-    if (net.isIP(hostname) === 4) {
-      if (isPrivateIpv4(hostname)) {
-        return `Blocked private IPv4 host: ${parsed.hostname}`;
-      }
-    }
-    if (net.isIP(hostname) === 6) {
-      if (isPrivateIpv6(hostname)) {
-        return `Blocked private IPv6 host: ${parsed.hostname}`;
-      }
-    }
-    if (!net.isIP(hostname)) {
-      const records = await dns.lookup(hostname, { all: true, verbatim: true });
-      if (records.some((record) => isPrivateResolvedAddress(record.address))) {
-        return `Blocked private resolved address for host: ${parsed.hostname}`;
-      }
-    }
+    await resolvePublicHttpAddress(parsed.hostname.toLowerCase());
     return undefined;
   } catch {
-    return "Invalid URL";
+    return "Invalid or blocked URL";
   }
 };
 
@@ -403,4 +481,4 @@ const guessMimeType = (filePath: string) => {
 };
 
 export const createIngestor = (storageRoot: string, provider: SynthKitProvider) =>
-  new SynthKitIngestor({ storage: createStorage(storageRoot), provider });
+  new SynthKitIngestor({ storage: createStorage(storageRoot), provider, rootPath: storageRoot });

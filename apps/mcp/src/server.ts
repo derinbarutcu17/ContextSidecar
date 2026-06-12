@@ -16,45 +16,18 @@ import {
   ContextItemCreateV1Schema,
   ContextItemListV1Schema,
   ContextItemSearchV1Schema,
-  ContextItemUpdateV1Schema
+  ContextItemUpdateV1Schema,
+  CreateProjectRequestV1Schema,
+  ProjectIngestTextRequestV1Schema,
+  ProjectIngestUrlRequestV1Schema,
+  ProjectIngestPathRequestV1Schema,
+  ProjectSynthesisRequestV1Schema,
+  RevisionRequestV1Schema
 } from "@context-sidecar/domain";
 import { createContextSidecarService, SynthKitEngine } from "@context-sidecar/core";
 import { ProviderConfigSchema, resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
 import { resolveContextSidecarRootPathFromProcessEnv, resolveServerListenOptionsFromProcessEnv } from "@context-sidecar/shared";
 import { z } from "zod";
-
-const ProjectCreateSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  defaultMode: z.enum(["brief", "decision_memo", "deck_outline"]).optional()
-});
-
-const SynthesisSchema = z.object({
-  projectId: z.string().min(1),
-  mode: z.enum(["brief", "decision_memo", "deck_outline"]),
-  title: z.string().min(1),
-  question: z.string().optional(),
-  audience: z.string().optional(),
-  desiredDirections: z.union([z.literal(2), z.literal(3)]).optional(),
-  sourceIds: z.array(z.string()).optional()
-});
-
-const StringBodySchema = z.object({
-  projectId: z.string().min(1),
-  text: z.string().optional(),
-  markdown: z.string().optional(),
-  url: z.string().optional(),
-  filePath: z.string().optional(),
-  title: z.string().optional()
-});
-
-const RevisionSchema = z.object({
-  synthesisId: z.string().min(1),
-  sectionId: z.string().min(1),
-  body: z.string().min(1),
-  reason: z.string().min(1),
-  actor: z.string().optional()
-});
 
 export interface McpServerOptions {
   rootPath?: string;
@@ -142,7 +115,7 @@ export const createMcpServer = (options: McpServerOptions = {}) => {
         case "context_archive": return textResult(contextService.archiveItem(z.object({ id: z.string().min(1) }).parse(args ?? {}).id));
         case "context_pin": return textResult(contextService.pinItem(z.object({ id: z.string().min(1) }).parse(args ?? {}).id));
         case "project_create": {
-          const body = ProjectCreateSchema.parse(args ?? {});
+          const body = CreateProjectRequestV1Schema.parse(args ?? {});
           return textResult(
             engine.createProject({
               name: body.name,
@@ -152,25 +125,25 @@ export const createMcpServer = (options: McpServerOptions = {}) => {
           );
         }
         case "source_ingest_text": {
-          const body = StringBodySchema.parse(args ?? {});
+          const body = ProjectIngestTextRequestV1Schema.parse(args ?? {});
           return textResult(await engine.ingestText(body.projectId, body.text ?? "", ...(body.title ? [body.title] : [])));
         }
         case "source_ingest_markdown": {
-          const body = StringBodySchema.parse(args ?? {});
+          const body = ProjectIngestTextRequestV1Schema.parse(args ?? {});
           return textResult(
             await engine.ingestMarkdown(body.projectId, body.markdown ?? "", ...(body.title ? [body.title] : []))
           );
         }
         case "source_ingest_pdf": {
-          const body = StringBodySchema.parse(args ?? {});
+          const body = ProjectIngestPathRequestV1Schema.parse(args ?? {});
           return textResult(await engine.ingestPdf(body.projectId, body.filePath ?? "", ...(body.title ? [body.title] : [])));
         }
         case "source_ingest_url": {
-          const body = StringBodySchema.parse(args ?? {});
+          const body = ProjectIngestUrlRequestV1Schema.parse(args ?? {});
           return textResult(await engine.ingestUrl(body.projectId, body.url ?? "", ...(body.title ? [body.title] : [])));
         }
         case "synthesis_run": {
-          const body = SynthesisSchema.parse(args ?? {});
+          const body = ProjectSynthesisRequestV1Schema.parse(args ?? {});
           return textResult(
             await engine.runSynthesis({
               projectId: body.projectId,
@@ -196,7 +169,7 @@ export const createMcpServer = (options: McpServerOptions = {}) => {
           return textResult(engine.listContradictions(body.synthesisId));
         }
         case "draft_revise_section": {
-          const body = RevisionSchema.parse(args ?? {});
+          const body = z.object({ synthesisId: z.string().min(1) }).merge(RevisionRequestV1Schema).parse(args ?? {});
           return textResult(
             engine.reviseSection(body.synthesisId, body.sectionId, body.body, body.reason, body.actor)
           );

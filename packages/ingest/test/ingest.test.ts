@@ -16,10 +16,10 @@ describe("SynthKitIngestor", () => {
     const project = engine.createProject({ name: "Ingest" });
     const result = await engine.ingestUrl(project.id, "http://127.0.0.1:7777/private", "Blocked");
     expect(result.source.extractionQuality).toBe("failed");
-    expect(result.warnings.some((warning) => warning.includes("Blocked private IPv4 host"))).toBe(true);
+    expect(result.warnings.some((warning) => warning.includes("Invalid or blocked URL"))).toBe(true);
     const localhostResult = await engine.ingestUrl(project.id, "http://localhost:7777/private", "Blocked");
     expect(localhostResult.source.extractionQuality).toBe("failed");
-    expect(localhostResult.warnings.some((warning) => warning.includes("Blocked private resolved address")) || localhostResult.warnings.some((warning) => warning.includes("Blocked local URL host"))).toBe(true);
+    expect(localhostResult.warnings.some((warning) => warning.includes("Invalid or blocked URL"))).toBe(true);
     engine.close();
   });
 
@@ -32,6 +32,19 @@ describe("SynthKitIngestor", () => {
     const result = await engine.ingestPdf(project.id, filePath, "Broken PDF");
     expect(result.source.kind).toBe("pdf");
     expect(result.warnings.length).toBeGreaterThan(0);
+    engine.close();
+  });
+
+  it("rejects file paths outside the workspace root", async () => {
+    const root = tmpRoot();
+    const engine = new SynthKitEngine({ rootPath: root, provider: { kind: "mock", seed: "paths" } });
+    const project = engine.createProject({ name: "Paths" });
+    const outsidePdf = path.join(path.dirname(root), "outside.pdf");
+    const outsideImage = path.join(path.dirname(root), "outside.png");
+    fs.writeFileSync(outsidePdf, Buffer.from("not a pdf"));
+    fs.writeFileSync(outsideImage, Buffer.from([1, 2, 3]));
+    await expect(engine.ingestPdf(project.id, outsidePdf, "Outside PDF")).rejects.toThrow(/workspace root/i);
+    await expect(engine.ingestImage(project.id, outsideImage, "Outside Image")).rejects.toThrow(/workspace root/i);
     engine.close();
   });
 
@@ -54,7 +67,7 @@ describe("SynthKitIngestor", () => {
         throw new Error("not supported");
       }
     };
-    const ingestor = new SynthKitIngestor({ storage, provider });
+    const ingestor = new SynthKitIngestor({ storage, provider, rootPath: root });
     const projectId = "project_fallback";
     const imagePath = path.join(root, "image.png");
     fs.writeFileSync(imagePath, Buffer.from([0, 1, 2, 3]));

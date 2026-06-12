@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { timingSafeEqual } from "node:crypto";
 import Fastify from "fastify";
 import {
   CitationV1Schema,
@@ -16,12 +17,18 @@ import {
   DraftV1Schema,
   DraftSectionV1Schema,
   ExportArtifactV1Schema,
+  ExportRequestV1Schema,
+  CreateProjectRequestV1Schema,
+  IngestPathRequestV1Schema,
+  IngestTextRequestV1Schema,
+  IngestTranscriptRequestV1Schema,
+  IngestUrlRequestV1Schema,
   ProjectV1Schema,
   RevisionV1Schema,
   SourceAssetV1Schema,
   SourceV1Schema,
-  SynthesisRequestV1Schema,
-  SynthesisModeV1Schema,
+  RevisionRequestV1Schema,
+  SynthesisRunRequestV1Schema,
   ThemeClusterV1Schema,
   type SynthesisModeV1
 } from "@context-sidecar/domain";
@@ -31,63 +38,44 @@ import { resolveContextSidecarRootPathFromProcessEnv, resolveServerListenOptions
 import { z } from "zod";
 import { apiRouteDefinitions, routeSchemas } from "./routes.js";
 
-const CreateProjectSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  defaultMode: SynthesisModeV1Schema.optional()
-});
-
-const SynthesisBodySchema = z.object({
-  mode: SynthesisModeV1Schema,
-  title: z.string().min(1),
-  question: z.string().optional(),
-  audience: z.string().optional(),
-  desiredDirections: z.union([z.literal(2), z.literal(3)]).optional(),
-  sourceIds: z.array(z.string()).optional()
-});
-
-const IngestTextSchema = z.object({
-  text: z.string().optional(),
-  markdown: z.string().optional(),
-  title: z.string().optional(),
-  provenance: z
-    .object({
-      sourceName: z.string().optional(),
-      sourceUri: z.string().nullable().optional(),
-      importedBy: z.string().optional()
-    })
-    .optional()
-});
-
-const IngestUrlSchema = z.object({
-  url: z.string().url(),
-  title: z.string().optional()
-});
-
-const IngestPathSchema = z.object({
-  filePath: z.string().min(1),
-  title: z.string().optional()
-});
-
-const IngestTranscriptSchema = z.object({
-  transcript: z.string(),
-  title: z.string().optional()
-});
-
 export interface AppServerOptions {
   rootPath?: string;
   provider?: unknown;
+  listenHost?: string;
+  apiToken?: string;
 }
 
 export const createAppServer = (options: AppServerOptions = {}) => {
   const rootPath = options.rootPath ?? resolveContextSidecarRootPathFromProcessEnv();
   fs.mkdirSync(rootPath, { recursive: true });
   const provider = options.provider ? ProviderConfigSchema.parse(options.provider) : resolveProviderConfigFromProcessEnv();
+  const apiToken = options.apiToken ?? process.env.CONTEXT_SIDECAR_API_TOKEN ?? "";
+  const authRequired = Boolean(apiToken);
+  if (options.listenHost && !isLoopbackHost(options.listenHost) && !apiToken) {
+    throw new Error("API token required when binding ContextSidecar to a non-loopback host");
+  }
   const engine = new SynthKitEngine({ rootPath, provider });
   const contextService = createContextSidecarService(rootPath);
   const app = Fastify({
     logger: false
   });
+
+  if (authRequired) {
+    app.addHook("onRequest", async (request, reply) => {
+      const header = request.headers.authorization;
+      const actualToken = parseBearerToken(header);
+      if (!actualToken) {
+        reply.header("WWW-Authenticate", 'Bearer realm="ContextSidecar"');
+        reply.code(401);
+        return reply.send(fail(new Error("Missing bearer token")));
+      }
+      if (!constantTimeEquals(apiToken, actualToken)) {
+        reply.header("WWW-Authenticate", 'Bearer realm="ContextSidecar"');
+        reply.code(403);
+        return reply.send(fail(new Error("Invalid bearer token")));
+      }
+    });
+  }
 
   const ok = <T>(data: T) => ({ ok: true as const, data });
   const fail = (error: unknown) => ({
@@ -168,7 +156,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   app.get("/v1/projects", async () => ok(engine.listProjects()));
   app.post("/v1/projects", async (request, reply) => {
     try {
-      const body = CreateProjectSchema.parse(request.body);
+      const body = CreateProjectRequestV1Schema.parse(request.body);
       return ok(
         engine.createProject({
           name: body.name,
@@ -194,7 +182,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   const ingestText = async (request: any, reply: any) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const body = IngestTextSchema.parse(request.body);
+      const body = IngestTextRequestV1Schema.parse(request.body);
       return ok(await engine.ingestText(projectId, body.text ?? "", ...(body.title ? [body.title] : [])));
     } catch (error) {
       reply.code(400);
@@ -204,7 +192,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   const ingestMarkdown = async (request: any, reply: any) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const body = IngestTextSchema.parse(request.body);
+      const body = IngestTextRequestV1Schema.parse(request.body);
       return ok(
         await engine.ingestMarkdown(projectId, body.markdown ?? body.text ?? "", ...(body.title ? [body.title] : []))
       );
@@ -216,7 +204,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   const ingestUrl = async (request: any, reply: any) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const body = IngestUrlSchema.parse(request.body);
+      const body = IngestUrlRequestV1Schema.parse(request.body);
       return ok(await engine.ingestUrl(projectId, body.url, ...(body.title ? [body.title] : [])));
     } catch (error) {
       reply.code(400);
@@ -226,7 +214,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   const ingestPdf = async (request: any, reply: any) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const body = IngestPathSchema.parse(request.body);
+      const body = IngestPathRequestV1Schema.parse(request.body);
       return ok(await engine.ingestPdf(projectId, body.filePath, ...(body.title ? [body.title] : [])));
     } catch (error) {
       reply.code(400);
@@ -236,7 +224,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   const ingestImage = async (request: any, reply: any) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const body = IngestPathSchema.parse(request.body);
+      const body = IngestPathRequestV1Schema.parse(request.body);
       return ok(await engine.ingestImage(projectId, body.filePath, ...(body.title ? [body.title] : [])));
     } catch (error) {
       reply.code(400);
@@ -246,7 +234,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   const ingestTranscript = async (request: any, reply: any) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const body = IngestTranscriptSchema.parse(request.body);
+      const body = IngestTranscriptRequestV1Schema.parse(request.body);
       return ok(
         await engine.ingestTranscript(projectId, body.transcript, ...(body.title ? [body.title] : []))
       );
@@ -266,7 +254,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   app.post("/v1/projects/:projectId/synthesize", async (request, reply) => {
     try {
       const { projectId } = request.params as { projectId: string };
-      const body = SynthesisBodySchema.parse(request.body);
+      const body = SynthesisRunRequestV1Schema.parse(request.body);
       return ok(
         await engine.runSynthesis({
           projectId,
@@ -322,12 +310,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   app.post("/v1/syntheses/:synthesisId/revisions", async (request, reply) => {
     try {
       const { synthesisId } = request.params as { synthesisId: string };
-      const body = z.object({
-        sectionId: z.string().min(1),
-        body: z.string().min(1),
-        reason: z.string().min(1),
-        actor: z.string().optional()
-      }).parse(request.body);
+      const body = RevisionRequestV1Schema.parse(request.body);
       return ok(engine.reviseSection(synthesisId, body.sectionId, body.body, body.reason, body.actor));
     } catch (error) {
       reply.code(400);
@@ -343,7 +326,7 @@ export const createAppServer = (options: AppServerOptions = {}) => {
   app.post("/v1/syntheses/:synthesisId/export", async (request, reply) => {
     try {
       const { synthesisId } = request.params as { synthesisId: string };
-      const body = z.object({ format: z.enum(["markdown", "json"]) }).parse(request.body);
+      const body = ExportRequestV1Schema.parse(request.body);
       const artifact = body.format === "markdown" ? engine.exportMarkdown(synthesisId) : engine.exportJson(synthesisId);
       return ok(artifact);
     } catch (error) {
@@ -371,10 +354,26 @@ export const createAppServer = (options: AppServerOptions = {}) => {
 };
 
 export const startApiServer = async (options: AppServerOptions = {}) => {
-  const server = createAppServer(options);
   const { host, port } = resolveServerListenOptionsFromProcessEnv({ defaultPort: 8787 });
+  const server = createAppServer({ ...options, listenHost: host });
   await server.app.listen({ port, host });
   return server;
+};
+
+const isLoopbackHost = (host: string) => host === "127.0.0.1" || host === "::1" || host === "localhost";
+
+const parseBearerToken = (header: string | undefined) => {
+  if (!header) return undefined;
+  const [scheme, token, ...rest] = header.trim().split(/\s+/);
+  if (scheme !== "Bearer" || !token || rest.length > 0) return undefined;
+  return token;
+};
+
+const constantTimeEquals = (expected: string, actual: string) => {
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(actual);
+  if (expectedBuffer.length !== actualBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, actualBuffer);
 };
 
 const getOpenApi = (manifest: unknown) => {
