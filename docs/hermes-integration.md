@@ -86,7 +86,7 @@ Start by adding items you want every Hermes session to see:
 ./pnpm exec context-sidecar context add \
   --namespace project:context-sidecar \
   --item-type project_fact \
-  --content "The sidecar must expose the same capability through CLI, HTTP, and MCP." \
+  --content "The sidecar must expose MCP as the primary agent surface, with CLI and HTTP as supporting interfaces." \
   --source-type system_note
 ```
 
