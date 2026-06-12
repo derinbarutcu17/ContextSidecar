@@ -1,5 +1,17 @@
 # Protocol Surfaces
 
+## MCP
+
+- `context_add`
+- `context_update`
+- `context_get`
+- `context_list`
+- `context_search`
+- `context_pack`
+- `context_archive`
+- `context_pin`
+- `health_check`
+
 ## CLI
 
 - `context add`
@@ -23,15 +35,3 @@
 - `POST /context/:id/pin`
 - `GET /health`
 - `GET /capabilities`
-
-## MCP
-
-- `context_add`
-- `context_update`
-- `context_get`
-- `context_list`
-- `context_search`
-- `context_pack`
-- `context_archive`
-- `context_pin`
-- `health_check`
