@@ -2,6 +2,8 @@
 
 Wire ContextSidecar into [Hermes Agent](https://github.com/NousResearch/hermes-agent) as a native MCP tool. Once set up, your Hermes sessions automatically pull context from the sidecar — preferences, pinned instructions, project facts, and task notes.
 
+For the quickest local check, run `./pnpm setup` once, then `./pnpm dev:mcp` in a terminal.
+
 ## Setup
 
 ### 1. Start the MCP server
@@ -9,7 +11,7 @@ Wire ContextSidecar into [Hermes Agent](https://github.com/NousResearch/hermes-a
 From the repo root:
 
 ```bash
-./pnpm serve:mcp
+./pnpm dev:mcp
 ```
 
 Or via the Hermes launcher script:

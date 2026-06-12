@@ -2,7 +2,7 @@
   "mcpServers": {
     "context-sidecar": {
       "command": "./pnpm",
-      "args": ["exec", "context-sidecar", "serve", "mcp"],
+      "args": ["dev:mcp"],
       "env": {
         "CONTEXT_SIDECAR_HOME": "./.context-sidecar"
       }

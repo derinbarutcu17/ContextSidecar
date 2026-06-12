@@ -3,7 +3,7 @@
 ## Local API health
 
 ```bash
-./pnpm serve:api
+./pnpm dev:api
 bash examples/http/curl.sh
 ```
 
@@ -12,7 +12,7 @@ bash examples/http/curl.sh
 Start the MCP HTTP server:
 
 ```bash
-./pnpm exec synthkit serve mcp-http
+./pnpm exec context-sidecar serve mcp-http
 ```
 
 Then POST an initialize request:

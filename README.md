@@ -8,6 +8,8 @@ Context-Sidecar v1 is a local-first agent context sidecar. It stores small struc
 
 It exists to reduce repetition. Instead of re-explaining stable preferences, pinned instructions, project facts, workflow notes, and current task notes every session, you can save them once and ask Context-Sidecar for the best context pack for a namespace and task.
 
+If you are wiring the repo into an AI agent, start with [`docs/ai-agents.md`](./docs/ai-agents.md) and the root [`SKILL.md`](./SKILL.md).
+
 ## What It Stores
 
 - user preferences
