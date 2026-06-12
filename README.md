@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 
-Context-Sidecar v1 is a local-first agent context sidecar. It stores small structured context items and returns a compact context pack that an agent can consume through the CLI, a local HTTP API, or MCP.
+Context-Sidecar v1 is an agent-first local context sidecar. It stores small structured context items and returns a compact context pack that agents can consume through MCP first, with CLI and HTTP as supporting surfaces.
 
 It exists to reduce repetition. Instead of re-explaining stable preferences, pinned instructions, project facts, workflow notes, and current task notes every session, you can save them once and ask Context-Sidecar for the best context pack for a namespace and task.
 
