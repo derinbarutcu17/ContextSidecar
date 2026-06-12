@@ -6,7 +6,7 @@ ContextSidecar is built to be easy for local agents to adopt without hidden setu
 
 - Coding agents that need repeatable repo context
 - Hermes-style agents that can consume MCP tools
-- CLI-first workflows that want a compact, deterministic memory layer
+- MCP-first workflows that want a compact, deterministic memory layer
 - Developers who want a local sidecar instead of a web app or cloud sync service
 
 ## The one-command setup
@@ -38,7 +38,7 @@ This prepares the repo, initializes local state, and runs the safest useful vali
 ## How agents should think about the repo
 
 - The context store is protocol-agnostic.
-- The CLI, API, and MCP surfaces are thin clients over the same core service.
+- MCP is the primary agent-facing surface, with CLI and API as thin supporting clients over the same core service.
 - Schemas are the contract.
 - Context packs should be deterministic and easy to inspect.
 - The repo should stay local-first and transparent.
