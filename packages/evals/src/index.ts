@@ -7,7 +7,7 @@ const rootPath = path.join(process.cwd(), ".context-sidecar-evals");
 const fixtureItems = [
   { namespace: "project:job-sniper", item_type: "pinned_instruction", content: "Keep scope tight and prefer inspectable local behavior.", source_type: "manual_entry", status: "pinned", priority: 100 },
   { namespace: "project:job-sniper", item_type: "preference", content: "Prefer terse updates and practical implementation details.", source_type: "user_message", priority: 70 },
-  { namespace: "project:job-sniper", item_type: "project_fact", content: "The sidecar must expose the same capability through CLI, HTTP, and MCP.", source_type: "system_note", priority: 80 },
+  { namespace: "project:job-sniper", item_type: "project_fact", content: "The sidecar must expose MCP as the primary agent surface, with CLI and HTTP as supporting interfaces.", source_type: "system_note", priority: 80 },
   { namespace: "project:job-sniper", item_type: "task_note", content: "Current task is to finish deterministic context pack ranking and output.", source_type: "manual_entry", priority: 60 },
   { namespace: "project:job-sniper", item_type: "task_note", content: "Old brainstorm note that should stay archived.", source_type: "manual_entry", status: "archived", priority: 90 },
   { namespace: "project:job-sniper", item_type: "task_note", content: "Temporary note that is already expired.", source_type: "manual_entry", expires_at: "2026-04-20T09:00:00.000Z", priority: 95 },
