@@ -245,7 +245,7 @@ program
         service.addItem({
           namespace,
           item_type: "project_fact",
-          content: "CLI, HTTP, and MCP all share the same storage-backed service.",
+          content: "MCP is the primary agent surface, with CLI and HTTP sharing the same storage-backed service.",
           source_type: "system_note",
           priority: 80,
           tags: ["demo"]
