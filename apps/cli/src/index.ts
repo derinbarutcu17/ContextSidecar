@@ -7,6 +7,7 @@ import { startApiServer } from "@context-sidecar/api";
 import { startMcpHttpServer, startMcpServer } from "@context-sidecar/mcp";
 import { resolveProviderConfigFromProcessEnv } from "@context-sidecar/providers";
 import { resolveContextSidecarRootPathFromProcessEnv, resolveServerListenOptionsFromProcessEnv } from "@context-sidecar/shared";
+import { runDoctorDiagnostics, renderDoctorReport } from "./doctor.js";
 
 const program = new Command();
 program.name("context-sidecar").description("Local-first agent context sidecar").version("0.1.0");
@@ -590,20 +591,17 @@ contextCommand
 
 program
   .command("doctor")
-  .description("Check local environment and workspace readiness")
+  .description("Run comprehensive workspace diagnostics (integrity, schema, stats, recommendations)")
+  .option("--verbose", "show detailed output including table row counts", false)
   .action(async function (this: Command) {
-    const opts = this.optsWithGlobals() as { json?: boolean; root: string };
-    const engine = createEngine(opts.root);
-    const manifest = engine.getManifest();
-    const result = {
-      ok: true,
-      rootPath: opts.root,
-      node: process.version,
-      manifest,
-      storageExists: fs.existsSync(path.join(opts.root, "context-sidecar.sqlite"))
-    };
-    output(result, opts.json ?? false);
-    engine.close();
+    const opts = this.optsWithGlobals() as { json?: boolean; verbose?: boolean; root: string };
+    const report = runDoctorDiagnostics(String(opts.root));
+
+    if (opts.json) {
+      output(report, true);
+    } else {
+      console.log(renderDoctorReport(report));
+    }
   });
 
 program.parseAsync(process.argv).catch((error) => {

@@ -7,18 +7,22 @@ const cliPath = path.join(process.cwd(), "src/index.ts");
 vi.setConfig({ testTimeout: 20000 });
 
 describe("CLI", () => {
-  it("runs doctor in JSON mode", () => {
-    fs.rmSync(".tmp-cli-test", { recursive: true, force: true });
-    const output = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "doctor", "--json", "--root", ".tmp-cli-test"], {
+  it("runs doctor in JSON mode on fresh workspace", () => {
+    const root = ".tmp-cli-doctor-empty";
+    fs.rmSync(root, { recursive: true, force: true });
+    const output = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "doctor", "--json", "--root", root], {
       cwd: process.cwd(),
       encoding: "utf8"
     });
     const parsed = JSON.parse(output);
-    expect(parsed.ok).toBe(true);
-    expect(parsed.rootPath).toContain(".tmp-cli-test");
+    expect(parsed.ok).toBe(false);
+    expect(parsed.storage.exists).toBe(false);
+    expect(parsed.storage.integrityStatus).toBe("unknown");
+    expect(parsed.healthScore).toBe(65);
+    expect(parsed.recommendations.length).toBeGreaterThan(0);
   });
 
-  it("runs through the repo-root binary path", () => {
+  it("runs doctor through the repo-root binary path", () => {
     const repoRoot = path.resolve(process.cwd(), "../..");
     fs.rmSync(path.join(repoRoot, ".context-sidecar"), { recursive: true, force: true });
     const output = execFileSync("pnpm", ["exec", "context-sidecar", "doctor", "--json"], {
@@ -26,8 +30,73 @@ describe("CLI", () => {
       encoding: "utf8"
     });
     const parsed = JSON.parse(output);
-    expect(parsed.ok).toBe(true);
     expect(parsed.rootPath).toBe(path.join(repoRoot, ".context-sidecar"));
+    expect(parsed.platform).toContain("darwin");
+  });
+
+  it("reports healthy workspace after demo seed", () => {
+    const root = ".tmp-cli-doctor-demo";
+    fs.rmSync(root, { recursive: true, force: true });
+    // Seed via demo
+    execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "demo", "--json", "--workspace", root], {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    });
+    const output = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "doctor", "--json", "--root", root], {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    });
+    const parsed = JSON.parse(output);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.storage.exists).toBe(true);
+    expect(parsed.storage.integrityStatus).toBe("ok");
+    expect(parsed.storage.fileSizeBytes).toBeGreaterThan(0);
+    expect(parsed.database.tableRowCounts["context_items"]).toBe(4);
+    expect(parsed.database.itemCountByType).toHaveProperty("pinned_instruction");
+    expect(parsed.database.itemCountByStatus).toHaveProperty("active");
+    expect(parsed.database.expiredItems).toBe(0);
+    expect(parsed.schemaValidation.totalValidated).toBe(4);
+    expect(parsed.schemaValidation.errors).toBe(0);
+    expect(parsed.namespaces.length).toBeGreaterThan(0);
+    expect(parsed.healthScore).toBe(100);
+  });
+
+  it("reports expired items in doctor output", () => {
+    const root = ".tmp-cli-doctor-expired";
+    fs.rmSync(root, { recursive: true, force: true });
+    // Add an item that is already expired
+    execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath,
+      "context", "add",
+      "--namespace", "project:test",
+      "--item-type", "task_note",
+      "--content", "Old expired note.",
+      "--source-type", "manual_entry",
+      "--expires-at", "2020-01-01T00:00:00.000Z",
+      "--json", "--root", root
+    ], { cwd: process.cwd(), encoding: "utf8" });
+    const output = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "doctor", "--json", "--root", root], {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    });
+    const parsed = JSON.parse(output);
+    expect(parsed.database.expiredItems).toBe(1);
+    expect(parsed.database.itemCountByStatus).toHaveProperty("expired");
+    expect(parsed.healthScore).toBeLessThan(100);
+    expect(parsed.recommendations.some((r: string) => r.includes("expired"))).toBe(true);
+  });
+
+  it("reports ANSI output for terminal mode", () => {
+    const root = ".tmp-cli-doctor-ansi";
+    fs.rmSync(root, { recursive: true, force: true });
+    const output = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "doctor", "--root", root], {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    });
+    expect(output).toContain("ContextSidecar Doctor");
+    expect(output).toContain("Health Score");
+    expect(output).toContain("Recommendations");
+    // ANSI escape codes
+    expect(output).toContain("\x1b[");
   });
 
   it("supports context commands in json mode", () => {
