@@ -48,7 +48,7 @@ It serves that context through the same storage-backed core across:
 
 | Surface | Best for | Start here |
 | --- | --- | --- |
-| MCP | Hermes, Claude Code, OpenClaw, and similar agents | [`./pnpm dev:mcp`](./docs/hermes-integration.md) |
+| MCP | Hermes, Claude Code, OpenCode, and similar agents | [`./pnpm dev:mcp`](./docs/mcp-bootstrap.md) |
 | CLI | Day-to-day local context work | [`./pnpm exec context-sidecar context ...`](./docs/ai-agents.md) |
 | HTTP API | Scripts and local integrations | [`./pnpm dev:api`](./examples/http/README.md) |
 | TypeScript SDK | TS apps and toolchains | [`packages/sdk-ts/src/index.ts`](./packages/sdk-ts/src/index.ts) |
@@ -92,7 +92,7 @@ print(bundle["draft"]["id"])
 
 ## Agent integrations
 
-Use the built-in helper to generate ready-to-paste config snippets for Hermes, Claude Code, and OpenClaw-like MCP setups:
+Use the built-in helper to generate ready-to-paste config snippets for Hermes, Claude Code, and OpenCode-like MCP setups:
 
 ```bash
 ./pnpm exec context-sidecar context agent config --target hermes
@@ -106,6 +106,7 @@ For deeper agent setup guidance, read [`docs/ai-agents.md`](./docs/ai-agents.md)
 
 - [`docs/ai-agents.md`](./docs/ai-agents.md)
 - [`docs/hermes-integration.md`](./docs/hermes-integration.md)
+- [`docs/mcp-bootstrap.md`](./docs/mcp-bootstrap.md)
 - [`docs/protocols.md`](./docs/protocols.md)
 - [`docs/schema-contracts.md`](./docs/schema-contracts.md)
 - [`docs/test-matrix.md`](./docs/test-matrix.md)

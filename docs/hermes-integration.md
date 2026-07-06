@@ -4,6 +4,7 @@ Wire ContextSidecar into [Hermes Agent](https://github.com/NousResearch/hermes-a
 
 For the quickest local check, run `./pnpm setup` once, then `./pnpm dev:mcp` in a terminal.
 If you want the config snippet generated for you, run `./pnpm exec context-sidecar context agent config --target hermes`.
+For the bootstrap/readiness contract and the shared smoke-test sequence, see [`docs/mcp-bootstrap.md`](./mcp-bootstrap.md).
 
 ## Setup
 
@@ -45,6 +46,10 @@ native_mcp:
 ### 3. Restart Hermes
 
 The next Hermes session will auto-discover the `context-sidecar` MCP server and its tools.
+
+### Readiness check
+
+After the server starts, call `health_check` before treating the session as ready. On a fresh workspace, `listResources` should show the static capability and example catalogs first, and synthesis resources should only appear after a `synthesis_run`.
 
 ## Available tools
 

@@ -22,6 +22,7 @@
 - `context pack`
 - `context archive`
 - `context pin`
+- `context bootstrap repo`
 
 ## HTTP
 

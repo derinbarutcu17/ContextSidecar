@@ -17,6 +17,14 @@ ContextSidecar is built to be easy for local agents to adopt without hidden setu
 
 This prepares the repo, initializes local state, and runs the safest useful validation.
 
+For MCP plug-and-play use, follow the bootstrap contract in [`docs/mcp-bootstrap.md`](./mcp-bootstrap.md). The short version is:
+
+1. Seed the repo with `./pnpm exec context-sidecar context bootstrap repo`.
+2. Start a fresh MCP session.
+3. Call `health_check`.
+4. Confirm fresh-run resources with `listResources`.
+5. Run a synthesis and verify the new `request.id` shows up in the resource URIs.
+
 ## The core commands
 
 ```bash
@@ -34,6 +42,8 @@ This prepares the repo, initializes local state, and runs the safest useful vali
 3. Add task notes or pinned instructions with `./pnpm exec context-sidecar context add`
 4. Build a compact context pack with `./pnpm exec context-sidecar context pack`
 5. Use `./pnpm demo` to confirm the workflow is working
+
+If `context bootstrap repo` reports `ok: true` but an import shows `created: 0` on a rerun, that is still a success. Treat the returned `ok` flag and the updated namespace state as the contract, not the raw create count.
 
 ## How agents should think about the repo
 
@@ -78,6 +88,10 @@ Use these item types for stable context:
 ## Hermes
 
 Use `./pnpm dev:mcp` together with [`docs/hermes-integration.md`](./hermes-integration.md) for Hermes Agent.
+
+## MCP smoke test
+
+The expected client smoke sequence is documented in [`docs/mcp-bootstrap.md`](./mcp-bootstrap.md). Use it for ChatGPT, Claude Code, OpenCode, or any other MCP client that should work on a fresh repo without manual cleanup.
 
 ## Agent setup helper
 
