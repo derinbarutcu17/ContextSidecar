@@ -31,7 +31,8 @@ describe("CLI", () => {
     });
     const parsed = JSON.parse(output);
     expect(parsed.rootPath).toBe(path.join(repoRoot, ".context-sidecar"));
-    expect(parsed.platform).toContain("darwin");
+    expect(parsed.platform).toMatch(/^(darwin|linux|win32)/);
+    expect(parsed.platform).toContain(process.arch);
   });
 
   it("reports healthy workspace after demo seed", () => {
