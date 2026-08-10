@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "context-sidecar": {
+      "command": "./pnpm",
+      "args": ["dev:mcp"],
+      "env": {
+        "CONTEXT_SIDECAR_HOME": ".context-sidecar"
+      }
+    }
+  }
+}

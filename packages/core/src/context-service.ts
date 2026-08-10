@@ -12,6 +12,13 @@ import { createStorage, type ContextNamespaceSummaryV1, type CreateContextItemIn
 import { sha256 } from "@context-sidecar/shared";
 
 const DEFAULT_MAX_ITEMS = 8;
+export const PACK_CONTENT_CHAR_LIMIT = 600;
+
+const truncatePackContent = (content: string, itemId: string): string => {
+  if (content.length <= PACK_CONTENT_CHAR_LIMIT) return content;
+  return `${content.slice(0, PACK_CONTENT_CHAR_LIMIT)}\n… (truncated — fetch full item with context get ${itemId})`;
+};
+
 const SECTION_TITLES: Record<ContextItemType, string> = {
   pinned_instruction: "Pinned Instructions",
   preference: "Preferences",
@@ -97,7 +104,7 @@ export class ContextSidecarService {
       .filter((item) => effectiveStatus(item, now) !== "expired")
       .sort((left, right) => compareRank(left, right, request.task_query, now))
       .slice(0, request.max_items ?? DEFAULT_MAX_ITEMS);
-    const items: ContextPackEntryV1[] = ranked.map((item) => ({ id: item.id, item_type: item.item_type, content: item.content, priority: item.priority, status: effectiveStatus(item, now), source_type: item.source_type, source_reference: item.source_reference, reason_included: reasonIncluded(item, request.task_query, now) }));
+    const items: ContextPackEntryV1[] = ranked.map((item) => ({ id: item.id, item_type: item.item_type, content: truncatePackContent(item.content, item.id), priority: item.priority, status: effectiveStatus(item, now), source_type: item.source_type, source_reference: item.source_reference, reason_included: reasonIncluded(item, request.task_query, now) }));
     const pack = { namespace: request.namespace, generated_at: now, task_query: request.task_query, items, rendered_text: "" };
     return ContextPackV1Schema.parse({ ...pack, rendered_text: renderContextPack(pack) });
   }

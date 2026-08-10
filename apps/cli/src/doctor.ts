@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { createContextSidecarService, type ContextSidecarService } from "@context-sidecar/core";
 import { ContextItemV1Schema, type ContextItemType, type ContextStatus } from "@context-sidecar/domain";
 
@@ -23,6 +25,11 @@ export interface SchemaValidationResult {
   sampleErrors: string[];
 }
 
+export interface NativeBindingCheck {
+  status: "ok" | "error" | "skipped";
+  detail: string | null;
+}
+
 export interface DoctorReport {
   ok: boolean;
   rootPath: string;
@@ -43,6 +50,7 @@ export interface DoctorReport {
   };
   namespaces: NamespaceHealth[];
   schemaValidation: SchemaValidationResult;
+  native: NativeBindingCheck;
   healthScore: number;
   recommendations: string[];
 }
@@ -81,6 +89,37 @@ function formatBytes(bytes: number | null): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+
+function checkNativeBinding(rootPath: string): NativeBindingCheck {
+  const candidates = [
+    path.join(repoRoot, "packages", "storage", "package.json"),
+    path.join(rootPath, "node_modules", "better-sqlite3", "package.json"),
+    path.join(rootPath, "package.json"),
+  ];
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) continue;
+    try {
+      const requireFrom = createRequire(candidate);
+      const Database = requireFrom("better-sqlite3");
+      const db = new Database(":memory:");
+      db.close();
+      return { status: "ok", detail: null };
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException | null)?.code ?? null;
+      const message = err instanceof Error ? err.message : String(err);
+      if (code === "ERR_DLOPEN_FAILED" || /different Node\.js version|NODE_MODULE_VERSION/.test(message)) {
+        return {
+          status: "error",
+          detail: "better-sqlite3 native binding does not match this Node version. Rebuild it: `pnpm rebuild better-sqlite3`.",
+        };
+      }
+      return { status: "error", detail: message };
+    }
+  }
+  return { status: "skipped", detail: "better-sqlite3 could not be located from this workspace." };
 }
 
 function runIntegrityCheck(service: ContextSidecarService): { status: "ok" | "error" | "unknown"; detail: string | null } {
@@ -246,6 +285,8 @@ function computeHealthScore(report: DoctorReport): number {
 
   // storage existence
   if (!report.storage.exists) score -= 20;
+  // native binding
+  if (report.native.status === "error") score -= 30;
   // integrity
   if (report.storage.integrityStatus === "error") score -= 25;
   if (report.storage.integrityStatus === "unknown") score -= 5;
@@ -269,8 +310,16 @@ function computeHealthScore(report: DoctorReport): number {
 function generateRecommendations(report: DoctorReport): string[] {
   const recs: string[] = [];
 
+  if (report.native.status === "error") {
+    recs.push(
+      `Native module mismatch: ${report.native.detail ?? "better-sqlite3 failed to load."} Run \`pnpm rebuild better-sqlite3\` with Node ${report.node} active (see .nvmrc).`
+    );
+  } else if (report.native.status === "skipped") {
+    recs.push("Native module check skipped: better-sqlite3 was not resolvable. Run `pnpm install` first.");
+  }
+
   if (!report.storage.exists) {
-    recs.push("No database found. Run `pnpm exec context-sidecar context bootstrap repo` to seed the workspace.");
+    recs.push("No database found. Run `pnpm exec context-sidecar init` to create the workspace, then `pnpm exec context-sidecar context bootstrap repo` to seed it.");
   } else {
     if (report.storage.integrityStatus === "error") {
       recs.push("Database integrity check FAILED. Restore from backup or re-create the workspace.");
@@ -352,8 +401,10 @@ export function runDoctorDiagnostics(rootPath: string): DoctorReport {
 
   const now = new Date().toISOString();
 
+  const native = checkNativeBinding(String(rootPath));
+
   const report: DoctorReport = {
-    ok: integrityResult.status === "ok",
+    ok: integrityResult.status === "ok" && native.status === "ok",
     rootPath,
     node: process.version,
     platform: `${process.platform} ${process.arch}`,
@@ -372,6 +423,7 @@ export function runDoctorDiagnostics(rootPath: string): DoctorReport {
     },
     namespaces: namespaceHealth,
     schemaValidation,
+    native,
     healthScore: 100, // placeholder
     recommendations: [],
   };
@@ -395,6 +447,17 @@ export function renderDoctorReport(report: DoctorReport): string {
   lines.push(`${GRAY}node: ${report.node} · ${report.platform}${RESET}`);
   lines.push(`${GRAY}run:  ${report.timestamp}${RESET}`);
   lines.push("");
+
+  // native modules
+  if (report.native.status === "ok") {
+    lines.push(`${BOLD}Native Modules${RESET}`);
+    lines.push(`  ${GREEN}${CHECK}${RESET} better-sqlite3: matches Node ${report.node}`);
+    lines.push("");
+  } else if (report.native.status === "error") {
+    lines.push(`${BOLD}Native Modules${RESET}`);
+    lines.push(`  ${RED}${CROSS}${RESET} better-sqlite3: ${report.native.detail}`);
+    lines.push("");
+  }
 
   // health score bar
   const score = report.healthScore;

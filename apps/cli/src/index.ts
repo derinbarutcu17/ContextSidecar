@@ -14,7 +14,7 @@ program.name("context-sidecar").description("Local-first agent context sidecar")
 program.option(
   "--root <path>",
   "workspace root path",
-  resolveContextSidecarRootPathFromProcessEnv()
+  resolveContextSidecarRootPathFromProcessEnv({ env: process.env })
 );
 program.option("--json", "emit JSON only", false);
 
@@ -51,9 +51,16 @@ const markdownTitle = (filePath: string, content: string) => {
 
 const uniqueStrings = (values: string[]) => [...new Set(values.filter(Boolean))];
 
-type AgentConfigTarget = "hermes" | "claude-code" | "openclaw";
+type AgentConfigTarget = "hermes" | "claude-code" | "openclaw" | "codex";
 
-const buildAgentConfig = (root: string, target: AgentConfigTarget) => {
+interface AgentConfigResult {
+  target: AgentConfigTarget;
+  title: string;
+  configText: string;
+  nextSteps: string[];
+}
+
+const buildAgentConfig = (root: string, target: AgentConfigTarget, format: "toml" | "json" = "toml"): AgentConfigResult => {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
   const pnpmPath = path.join(repoRoot, "pnpm");
   const contextHome = path.resolve(root);
@@ -88,6 +95,28 @@ const buildAgentConfig = (root: string, target: AgentConfigTarget) => {
       title: "Claude Code MCP config",
       configText: JSON.stringify({ mcpServers: { "context-sidecar": launcher } }, null, 2),
       nextSteps: ["Add this block to your Claude Code MCP config", "Restart Claude Code"]
+    };
+  }
+
+  if (target === "codex") {
+    if (format === "json") {
+      return {
+        target,
+        title: "Codex repo-scoped MCP config (.mcp.json)",
+        configText: JSON.stringify({ mcpServers: { "context-sidecar": launcher } }, null, 2),
+        nextSteps: ["Place this at the repo root as .mcp.json (JSON), or merge into an existing .mcp.json", "Restart Codex"]
+      };
+    }
+    return {
+      target,
+      title: "Codex MCP config",
+      configText: [
+        `[mcp_servers.context-sidecar]`,
+        `command = "${launcher.command}"`,
+        `args = ["${launcher.args[0]}"]`,
+        `env = { CONTEXT_SIDECAR_HOME = "${launcher.env.CONTEXT_SIDECAR_HOME}" }`
+      ].join("\n"),
+      nextSteps: ["Add this block to ~/.codex/config.toml (TOML). For repo-scoped config, use --format json and place it in .mcp.json", "Restart Codex"]
     };
   }
 
@@ -200,7 +229,7 @@ program
   .command("init")
   .description("Initialize a workspace and print the default project path")
   .action(() => {
-    const rootPath = resolveContextSidecarRootPathFromProcessEnv();
+    const rootPath = resolveContextSidecarRootPathFromProcessEnv({ env: process.env });
     fs.mkdirSync(rootPath, { recursive: true });
     output({ ok: true, rootPath });
   });
@@ -379,6 +408,29 @@ contextCommand
       })
   )
   .addCommand(
+    new Command("export")
+      .description("Export all context items for a namespace as JSON lines (backup/portability)")
+      .requiredOption("--namespace <namespace>")
+      .option("--output <file>", "write JSON lines to a file instead of stdout")
+      .action(async function (this: Command) {
+        const opts = this.optsWithGlobals() as { json?: boolean; root: string; namespace: string; output?: string };
+        const service = createContextSidecarService(String(opts.root));
+        try {
+          const items = service.listItems({ namespace: String(opts.namespace), include_archived: true });
+          const lines = items.map((item) => JSON.stringify(item)).join("\n") + (items.length > 0 ? "\n" : "");
+          if (opts.output) {
+            const fs = await import("node:fs");
+            fs.writeFileSync(String(opts.output), lines, "utf8");
+            console.log(`Exported ${items.length} item(s) to ${opts.output}`);
+          } else {
+            process.stdout.write(lines);
+          }
+        } finally {
+          service.storage.close();
+        }
+      })
+  )
+  .addCommand(
     new Command("search")
       .requiredOption("--namespace <namespace>")
       .requiredOption("--query <query>")
@@ -518,14 +570,19 @@ contextCommand
       .description("Generate agent integration snippets")
       .addCommand(
         new Command("config")
-          .option("--target <target>", "hermes, claude-code, or openclaw", "hermes")
+          .option("--target <target>", "hermes, claude-code, openclaw, or codex", "hermes")
+          .option("--format <format>", "config output format for codex: toml (global config.toml) or json (.mcp.json)", "toml")
           .action(function (this: Command) {
             const opts = this.optsWithGlobals() as Record<string, string | boolean>;
             const target = String(opts.target) as AgentConfigTarget;
-            if (!["hermes", "claude-code", "openclaw"].includes(target)) {
+            const format = String(opts.format) as "toml" | "json";
+            if (!["hermes", "claude-code", "openclaw", "codex"].includes(target)) {
               throw new Error(`Unsupported agent target: ${target}`);
             }
-            const result = buildAgentConfig(String(opts.root), target);
+            if (target !== "codex" && format !== "toml") {
+              throw new Error(`--format is only supported for the codex target`);
+            }
+            const result = buildAgentConfig(String(opts.root), target, format);
             if (Boolean(opts.json)) {
               output({
                 ok: true,
@@ -601,6 +658,10 @@ program
       output(report, true);
     } else {
       console.log(renderDoctorReport(report));
+    }
+
+    if (report.native.status === "error" || report.storage.integrityStatus === "error") {
+      process.exitCode = 1;
     }
   });
 

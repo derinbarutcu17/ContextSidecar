@@ -24,15 +24,18 @@ describe("CLI", () => {
 
   it("runs doctor through the repo-root binary path", () => {
     const repoRoot = path.resolve(process.cwd(), "../..");
-    fs.rmSync(path.join(repoRoot, ".context-sidecar"), { recursive: true, force: true });
+    const envRoot = path.join(repoRoot, ".tmp-cli-doctor-root");
+    fs.rmSync(envRoot, { recursive: true, force: true });
     const output = execFileSync("pnpm", ["exec", "context-sidecar", "doctor", "--json"], {
       cwd: repoRoot,
+      env: { ...process.env, CONTEXT_SIDECAR_HOME: envRoot },
       encoding: "utf8"
     });
     const parsed = JSON.parse(output);
-    expect(parsed.rootPath).toBe(path.join(repoRoot, ".context-sidecar"));
+    expect(parsed.rootPath).toBe(envRoot);
     expect(parsed.platform).toMatch(/^(darwin|linux|win32)/);
     expect(parsed.platform).toContain(process.arch);
+    fs.rmSync(envRoot, { recursive: true, force: true });
   });
 
   it("reports healthy workspace after demo seed", () => {
@@ -84,6 +87,36 @@ describe("CLI", () => {
     expect(parsed.database.itemCountByStatus).toHaveProperty("expired");
     expect(parsed.healthScore).toBeLessThan(100);
     expect(parsed.recommendations.some((r: string) => r.includes("expired"))).toBe(true);
+  });
+
+  it("reports native module status in doctor output", () => {
+    const root = ".tmp-cli-doctor-native";
+    fs.rmSync(root, { recursive: true, force: true });
+    const output = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "doctor", "--json", "--root", root], {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    });
+    const parsed = JSON.parse(output) as { native: { status: string; detail: string | null }; ok: boolean };
+    expect(parsed.native.status).toBe("ok");
+    expect(parsed.native.detail).toBeNull();
+    // A healthy native binding keeps a missing database from flipping the report
+    expect(parsed.ok).toBe(false);
+  });
+
+  it("exports context items as JSON lines", () => {
+    const root = ".tmp-cli-export";
+    fs.rmSync(root, { recursive: true, force: true });
+    execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-a", "--item-type", "project_fact", "--content", "Fact one.", "--source-type", "manual_entry", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "add", "--namespace", "project:repo-a", "--item-type", "pinned_instruction", "--content", "Pin two.", "--source-type", "manual_entry", "--status", "pinned", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const outFile = path.join(process.cwd(), ".tmp-cli-export.jsonl");
+    fs.rmSync(outFile, { force: true });
+    execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "export", "--namespace", "project:repo-a", "--output", outFile, "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const lines = fs.readFileSync(outFile, "utf8").trim().split("\n");
+    expect(lines.length).toBe(2);
+    const items = lines.map((line) => JSON.parse(line) as { id: string; item_type: string; content: string; namespace: string });
+    expect(items.every((item) => item.namespace === "project:repo-a")).toBe(true);
+    expect(items.some((item) => item.item_type === "pinned_instruction" && item.content === "Pin two.")).toBe(true);
+    fs.rmSync(outFile, { force: true });
   });
 
   it("reports ANSI output for terminal mode", () => {

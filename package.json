@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
@@ -17,6 +20,7 @@
     "doctor": "./pnpm exec context-sidecar doctor --json",
     "eval": "./pnpm --filter @context-sidecar/evals test",
     "demo": "./pnpm exec context-sidecar demo",
+    "adopt": "bash scripts/adoption-check.sh",
     "dev": "bash scripts/dev.sh",
     "dev:api": "./pnpm exec context-sidecar serve api",
     "dev:mcp": "./pnpm exec context-sidecar serve mcp",
