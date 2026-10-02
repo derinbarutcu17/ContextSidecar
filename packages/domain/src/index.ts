@@ -356,11 +356,18 @@ export const ContextPackEntryV1Schema = z.strictObject({
   reason_included: z.string().min(1)
 });
 
+export const ContextPackContradictionV1Schema = z.strictObject({
+  left_id: Id,
+  right_id: Id,
+  reason: z.string().min(1)
+});
+
 export const ContextPackV1Schema = z.strictObject({
   namespace: z.string().min(1),
   generated_at: IsoDateTime,
   task_query: z.string().nullable(),
   items: z.array(ContextPackEntryV1Schema),
+  contradictions: z.array(ContextPackContradictionV1Schema).default([]),
   rendered_text: z.string().min(1)
 });
 
@@ -489,6 +496,7 @@ export type ContextItemListV1 = z.infer<typeof ContextItemListV1Schema>;
 export type ContextItemSearchV1 = z.infer<typeof ContextItemSearchV1Schema>;
 export type ContextPackRequestV1 = z.infer<typeof ContextPackRequestV1Schema>;
 export type ContextPackEntryV1 = z.infer<typeof ContextPackEntryV1Schema>;
+export type ContextPackContradictionV1 = z.infer<typeof ContextPackContradictionV1Schema>;
 export type ContextPackV1 = z.infer<typeof ContextPackV1Schema>;
 export type CreateProjectRequestV1 = z.infer<typeof CreateProjectRequestV1Schema>;
 export type ProjectIngestTextRequestV1 = z.infer<typeof ProjectIngestTextRequestV1Schema>;

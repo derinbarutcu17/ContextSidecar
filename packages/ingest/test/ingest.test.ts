@@ -48,6 +48,20 @@ describe("SynthKitIngestor", () => {
     engine.close();
   });
 
+  it("redacts secrets from ingested text before storing", async () => {
+    const root = tmpRoot();
+    const engine = new SynthKitEngine({ rootPath: root, provider: { kind: "mock", seed: "redact" } });
+    const project = engine.createProject({ name: "Redact" });
+    const result = await engine.ingestText(project.id, "Credentials: sk-ant-abcdefghijklmnopqrstuvwxyz123456789 and token=super-secret-value", "Secrets");
+    const stored = engine.storage.listChunks(project.id);
+    const all = stored.map((chunk) => chunk.content).join("\n");
+    expect(all).not.toContain("sk-ant-abcdefghijklmnopqrstuvwxyz123456789");
+    expect(all).not.toContain("super-secret-value");
+    expect(all).toContain("[REDACTED:anthropic_key]");
+    expect(all).toContain("[REDACTED:generic_secret]");
+    engine.close();
+  });
+
   it("records honest fallback warnings when OCR is unavailable", async () => {
     const root = tmpRoot();
     const storage = createStorage(root);

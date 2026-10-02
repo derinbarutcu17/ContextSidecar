@@ -4,12 +4,13 @@ import {
   ContextPackV1Schema,
   type ContextItemType,
   type ContextItemV1,
+  type ContextPackContradictionV1,
   type ContextPackEntryV1,
   type ContextPackRequestV1,
   nowIso
 } from "@context-sidecar/domain";
 import { createStorage, type ContextNamespaceSummaryV1, type CreateContextItemInput, type SearchContextItemsFilters, type SynthKitStorage, type UpdateContextItemInput } from "@context-sidecar/storage";
-import { sha256 } from "@context-sidecar/shared";
+import { redactSecrets, sha256 } from "@context-sidecar/shared";
 
 const DEFAULT_MAX_ITEMS = 8;
 export const PACK_CONTENT_CHAR_LIMIT = 600;
@@ -35,7 +36,41 @@ const effectiveStatus = (item: ContextItemV1, now: string) => item.expires_at &&
 const compareRank = (left: ContextItemV1, right: ContextItemV1, taskQuery: string | null, now: string) => statusWeight(effectiveStatus(right, now)) - statusWeight(effectiveStatus(left, now)) || right.priority - left.priority || simpleRelevance(right, taskQuery) - simpleRelevance(left, taskQuery) || right.updated_at.localeCompare(left.updated_at) || left.id.localeCompare(right.id);
 const reasonIncluded = (item: ContextItemV1, taskQuery: string | null, now: string) => effectiveStatus(item, now) === "pinned" ? "Pinned items always win and are included first." : taskQuery && simpleRelevance(item, taskQuery) > 0 ? `Matches task query: ${taskQuery}` : item.priority > 0 ? `Included for priority ${item.priority}.` : "Included as recent active context.";
 
-const renderContextPack = (pack: { namespace: string; generated_at: string; task_query: string | null; items: ContextPackEntryV1[] }) => {
+const tokenize = (content: string) => content.toLowerCase().match(/[a-z0-9_]{2,}/g) ?? [];
+const tokenJaccard = (a: string, b: string) => {
+  const left = new Set(tokenize(a));
+  const right = new Set(tokenize(b));
+  if (left.size === 0 || right.size === 0) return 0;
+  let intersection = 0;
+  for (const token of left) if (right.has(token)) intersection += 1;
+  return intersection / (left.size + right.size - intersection);
+};
+
+const CONTRADICTION_SIMILARITY_THRESHOLD = 0.6;
+
+const detectContradictions = (items: ContextItemV1[], now: string): ContextPackContradictionV1[] => {
+  const flagged: ContextPackContradictionV1[] = [];
+  const ordered = [...items].sort((a, b) => a.id.localeCompare(b.id));
+  for (let i = 0; i < ordered.length; i += 1) {
+    for (let j = i + 1; j < ordered.length; j += 1) {
+      const left = ordered[i]!;
+      const right = ordered[j]!;
+      if (left.id === right.id || left.item_type !== right.item_type) continue;
+      if (effectiveStatus(left, now) === "expired" || effectiveStatus(right, now) === "expired") continue;
+      const similarity = tokenJaccard(left.content, right.content);
+      if (similarity >= CONTRADICTION_SIMILARITY_THRESHOLD) {
+        flagged.push({
+          left_id: left.id,
+          right_id: right.id,
+          reason: `Items are ${(similarity * 100).toFixed(0)}% similar but not identical — verify which is current before relying on either.`
+        });
+      }
+    }
+  }
+  return flagged.sort((a, b) => a.left_id.localeCompare(b.left_id) || a.right_id.localeCompare(b.right_id));
+};
+
+const renderContextPack = (pack: { namespace: string; generated_at: string; task_query: string | null; items: ContextPackEntryV1[]; contradictions: ContextPackContradictionV1[] }) => {
   const grouped = new Map<string, ContextPackEntryV1[]>();
   for (const item of pack.items) grouped.set(SECTION_TITLES[item.item_type], [...(grouped.get(SECTION_TITLES[item.item_type]) ?? []), item]);
   const lines = ["[Context Pack]", `Namespace: ${pack.namespace}`, `Generated At: ${pack.generated_at}`];
@@ -46,6 +81,12 @@ const renderContextPack = (pack: { namespace: string; generated_at: string; task
     if (!items?.length) continue;
     lines.push("", `[${title}]`);
     for (const item of items) lines.push(`- ${item.content}`);
+  }
+  if (pack.contradictions.length > 0) {
+    lines.push("", "[Contradictions]");
+    for (const c of pack.contradictions) {
+      lines.push(`- ${c.left_id} vs ${c.right_id}: ${c.reason}`);
+    }
   }
   return lines.join("\n");
 };
@@ -73,13 +114,13 @@ export class ContextSidecarService {
     const timestamp = nowIso();
     return this.storage.createContextItem(ContextItemV1Schema.parse({
       id: `ctx_${sha256(`${input.namespace}:${input.item_type}:${input.content}:${timestamp}`).slice(0, 16)}`,
-      namespace: input.namespace, item_type: input.item_type, content: input.content, source_type: input.source_type,
+      namespace: input.namespace, item_type: input.item_type, content: redactSecrets(input.content), source_type: input.source_type,
       source_reference: input.source_reference ?? null, priority: input.priority ?? 0, status: input.status ?? "active",
       created_at: timestamp, updated_at: timestamp, expires_at: input.expires_at ?? null, tags: input.tags ?? [], metadata: input.metadata ?? {}
     }) as CreateContextItemInput);
   }
   updateItem(id: string, input: UpdateItemInput) {
-    const updated = this.storage.updateContextItem(id, { ...input, updated_at: nowIso() } satisfies UpdateContextItemInput);
+    const updated = this.storage.updateContextItem(id, { ...input, ...(input.content !== undefined ? { content: redactSecrets(input.content) } : {}), updated_at: nowIso() } satisfies UpdateContextItemInput);
     if (!updated) throw new Error(`Context item not found: ${id}`);
     return updated;
   }
@@ -105,7 +146,8 @@ export class ContextSidecarService {
       .sort((left, right) => compareRank(left, right, request.task_query, now))
       .slice(0, request.max_items ?? DEFAULT_MAX_ITEMS);
     const items: ContextPackEntryV1[] = ranked.map((item) => ({ id: item.id, item_type: item.item_type, content: truncatePackContent(item.content, item.id), priority: item.priority, status: effectiveStatus(item, now), source_type: item.source_type, source_reference: item.source_reference, reason_included: reasonIncluded(item, request.task_query, now) }));
-    const pack = { namespace: request.namespace, generated_at: now, task_query: request.task_query, items, rendered_text: "" };
+    const contradictions = detectContradictions(ranked, now);
+    const pack = { namespace: request.namespace, generated_at: now, task_query: request.task_query, items, contradictions, rendered_text: "" };
     return ContextPackV1Schema.parse({ ...pack, rendered_text: renderContextPack(pack) });
   }
 }

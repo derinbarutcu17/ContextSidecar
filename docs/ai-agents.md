@@ -101,6 +101,21 @@ Generate ready-to-paste snippets for common agent runtimes:
 ./pnpm exec context-sidecar context agent config --target hermes
 ./pnpm exec context-sidecar context agent config --target claude-code
 ./pnpm exec context-sidecar context agent config --target openclaw
+./pnpm exec context-sidecar context agent config --target codex            # ~/.codex/config.toml (TOML)
+./pnpm exec context-sidecar context agent config --target codex --format json  # repo-scoped .mcp.json (JSON)
+```
+
+## Backup and restore
+
+```bash
+# Full backup of a namespace as JSON lines (includes archived items)
+./pnpm exec context-sidecar context export --namespace project:context-sidecar --output context-backup.jsonl
+
+# Restore from a backup
+./pnpm exec context-sidecar context import jsonl --namespace project:context-sidecar --file context-backup.jsonl
+
+# Wipe the local database (destructive — requires --yes)
+./pnpm exec context-sidecar context reset --yes
 ```
 
 ## Claude Code
@@ -115,13 +130,22 @@ Use the example config in [`examples/claude-code/mcp-config.json`](../examples/c
 ./pnpm test
 ./pnpm build
 ./pnpm demo
+./pnpm adopt   # full adoption path: clean workspace -> usable MCP session
 ```
 
 ## Troubleshooting
 
-- If `./pnpm setup` fails, re-run `./pnpm doctor` and read the first error.
+- If `./pnpm setup` fails, re-run `./pnpm doctor` and read the first error. Doctor now
+  checks the Node version against `engines` and the `better-sqlite3` native binding,
+  and prints the exact repair command (`pnpm rebuild better-sqlite3`) on a mismatch.
 - If `./pnpm dev:api` or `./pnpm dev:mcp` exits immediately, check the repo root and installed dependencies.
 - If a pack looks wrong, verify the namespace and whether archived or expired items are being filtered.
+- Context packs truncate long items (600 chars) with a `context get <id>` pointer; fetch
+  full content with `context get` when needed.
+- Packs flag near-duplicate, potentially conflicting items under `[Contradictions]` —
+  verify which item is current before relying on either.
+- Secrets (API keys, tokens, private keys) are redacted automatically when items are
+  added or content is ingested; they never persist in the workspace database.
 
 ## Reference docs
 

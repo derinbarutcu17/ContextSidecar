@@ -1,5 +1,18 @@
 # Security Review Report
 
+> **Status update (2026-08-10):** all three findings below are **resolved** in the
+> current codebase (commit `129236f` "harden ingest and api security" plus follow-ups):
+> - SSRF: URL fetch pins the connection to the validated resolved IP (SNI + Host header
+>   preserved), blocks DNS-rebinding TOCTOU, rejects redirects, and blocks private/loopback
+>   ranges (`packages/ingest/src/index.ts`). Covered by `apps/ingest` tests.
+> - Arbitrary file read: ingest paths are sandboxed to the workspace root
+>   (`packages/ingest/src/index.ts:150`). Covered by tests.
+> - Missing auth: bearer token gate (`CONTEXT_SIDECAR_API_TOKEN`) with an enforced guard
+>   that refuses non-loopback binds without a token (`apps/api/src/server.ts:52-75`).
+>   Covered by API tests.
+> Additional hardening since: secret redaction at every content chokepoint
+> (`packages/shared/src/redact.ts`, applied in `context add/update` and all ingest paths).
+
 ## Executive Summary
 
 I reviewed the current HTTP and ingest paths for attack surface issues. I found two high-impact vulnerabilities in the ingestion pipeline:

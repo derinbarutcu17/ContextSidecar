@@ -431,6 +431,29 @@ contextCommand
       })
   )
   .addCommand(
+    new Command("reset")
+      .description("Delete the local database for this workspace (destructive)")
+      .option("--yes", "confirm deletion without prompting")
+      .action(async function (this: Command) {
+        const opts = this.optsWithGlobals() as { json?: boolean; root: string; yes?: boolean };
+        if (!Boolean(opts.yes)) {
+          throw new Error("Refusing to reset without confirmation. Re-run with --yes.");
+        }
+        const fs = await import("node:fs");
+        const service = createContextSidecarService(String(opts.root));
+        service.storage.close();
+        for (const name of ["context-sidecar.sqlite", "context-sidecar.sqlite-wal", "context-sidecar.sqlite-shm"]) {
+          const target = path.join(String(opts.root), name);
+          if (fs.existsSync(target)) fs.rmSync(target, { force: true });
+        }
+        if (Boolean(opts.json)) {
+          output({ ok: true, rootPath: String(opts.root), deleted: true }, true);
+        } else {
+          console.log(`Reset workspace at ${String(opts.root)}`);
+        }
+      })
+  )
+  .addCommand(
     new Command("search")
       .requiredOption("--namespace <namespace>")
       .requiredOption("--query <query>")
@@ -533,6 +556,53 @@ contextCommand
   .addCommand(
     new Command("import")
       .description("Import content into context items")
+      .addCommand(
+        new Command("jsonl")
+          .description("Restore context items from JSON lines (companion to context export)")
+          .requiredOption("--namespace <namespace>")
+          .requiredOption("--file <file>")
+          .action(async function (this: Command) {
+            const opts = this.optsWithGlobals() as { json?: boolean; root: string; namespace: string; file: string };
+            const fs = await import("node:fs");
+            const lines = fs.readFileSync(String(opts.file), "utf8").split("\n").filter((line) => line.trim().length > 0);
+            const service = createContextSidecarService(String(opts.root));
+            try {
+              let created = 0;
+              for (const line of lines) {
+                const item = JSON.parse(line) as {
+                  item_type: string;
+                  content: string;
+                  source_type: string;
+                  source_reference?: string | null;
+                  priority?: number;
+                  status?: string;
+                  expires_at?: string | null;
+                  tags?: string[];
+                };
+                service.addItem({
+                  namespace: String(opts.namespace),
+                  item_type: item.item_type as any,
+                  content: item.content,
+                  source_type: item.source_type as any,
+                  source_reference: item.source_reference ?? null,
+                  priority: item.priority ?? 0,
+                  status: item.status as any,
+                  expires_at: item.expires_at ?? null,
+                  tags: item.tags ?? []
+                });
+                created += 1;
+              }
+              const message = `Imported ${created} item(s) into ${String(opts.namespace)}`;
+              if (Boolean(opts.json)) {
+                output({ ok: true, namespace: String(opts.namespace), created }, true);
+              } else {
+                console.log(message);
+              }
+            } finally {
+              service.storage.close();
+            }
+          })
+      )
       .addCommand(
         new Command("markdown")
           .description("Import markdown files or directories as context items")

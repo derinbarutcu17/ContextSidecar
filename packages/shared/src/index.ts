@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 export * from "./startup.js";
+export { redactSecrets, containsRedactedSecret } from "./redact.js";
 
 export const normalizeWhitespace = (text: string) =>
   text

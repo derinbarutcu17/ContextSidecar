@@ -191,6 +191,25 @@ describe("CLI", () => {
     const claude = JSON.parse(claudeOutput) as { target: string; configText: string };
     expect(claude.target).toBe("claude-code");
     expect(claude.configText).toContain("mcpServers");
+    expect(JSON.parse(claude.configText).mcpServers["context-sidecar"].command).toBeTruthy();
+
+    const openclawOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "agent", "config", "--target", "openclaw", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const openclaw = JSON.parse(openclawOutput) as { target: string; configText: string };
+    expect(openclaw.target).toBe("openclaw");
+    expect(openclaw.configText).toContain("command:");
+    expect(openclaw.configText).toContain("CONTEXT_SIDECAR_HOME");
+
+    const codexTomlOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "agent", "config", "--target", "codex", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const codexToml = JSON.parse(codexTomlOutput) as { target: string; configText: string };
+    expect(codexToml.target).toBe("codex");
+    expect(codexToml.configText).toContain("[mcp_servers.context-sidecar]");
+    expect(codexToml.configText).toContain("command = ");
+    expect(() => JSON.parse(codexToml.configText)).toThrow();
+
+    const codexJsonOutput = execFileSync("node", ["--conditions=source", "--import", "tsx", cliPath, "context", "agent", "config", "--target", "codex", "--format", "json", "--json", "--root", root], { cwd: process.cwd(), encoding: "utf8" });
+    const codexJson = JSON.parse(codexJsonOutput) as { target: string; configText: string };
+    expect(codexJson.configText).toContain("mcpServers");
+    expect(JSON.parse(codexJson.configText).mcpServers["context-sidecar"].args[0]).toBe("dev:mcp");
     expect(claude.configText).toContain("dev:mcp");
     expect(claude.configText).toContain(path.join(process.cwd(), "../../pnpm"));
   });

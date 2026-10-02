@@ -15,7 +15,7 @@ import {
   type SourceAssetV1,
   type SourceV1
 } from "@context-sidecar/domain";
-import { dedupeHash, makeId, sha256, titleFromText, truncate } from "@context-sidecar/shared";
+import { dedupeHash, makeId, redactSecrets, sha256, titleFromText, truncate } from "@context-sidecar/shared";
 import { createStorage, type SynthKitStorage } from "@context-sidecar/storage";
 import { type SynthKitProvider } from "@context-sidecar/providers";
 
@@ -47,7 +47,7 @@ export interface IngestResult {
 }
 
 const normalize = (text: string) =>
-  text
+  redactSecrets(text)
     .replace(/\r\n/g, "\n")
     .replace(/\u0000/g, "")
     .replace(/[ \t]+\n/g, "\n")

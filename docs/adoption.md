@@ -56,11 +56,13 @@ Track one row per session (target 5–10 sessions over one week):
 | Date | Repo | Context retrieved? | Useful? | Repeated explanation avoided? | Wrong/irrelevant? | MCP startup failure? | Est. time saved | Lighter or more complicated? |
 |---|---|---|---|---|---|---|---|---|
 | 2026-08-10 | ContextSidecar (dogfood) | yes (CLI pack) | yes — correct ranking (workspace pins first) | yes — Node-22 baseline pin recalled | no | n/a (CLI path) | n/a | pack was 12.6k chars → now truncated; usable |
-| | | | | | | | | |
+| 2026-08-10 | ContextSidecar (dogfood) | yes (CLI pack) | yes — pins first, Node-22 fact included | yes | no | n/a (CLI path) | n/a | 2.1k chars, 4 items; contradiction section working (0 flags on this query) |
 
 Session 1 evidence: retrieval correctness good (pinned instructions ranked first, Node-22
 fact included), compactness FAILED pre-fix (12,575 chars — full docs embedded) — fixed
 in §5 (3,371 chars, ~73% reduction). Contradiction + secret handling still unverified.
+Session 2 evidence: compact packs (2.1k chars), contradiction flags present in output,
+correct ranking — no wrong context observed.
 
 Gate for §8: if MCP failures are frequent, retrieval is wrong, or the workflow feels
 heavier, stop and treat ContextSidecar as a selective tool until fixed.
@@ -90,32 +92,44 @@ Implemented (2026-08-10):
 
 Deferred with evidence (priority order per plan):
 
-- **Contradiction handling** (§3 S6: no flags in packs) — needs core ranking work; queued.
-- **Secret filtering / prompt-injection safeguards** — no coverage exists; the security
-  report flags SSRF (URL ingest re-resolution), arbitrary file read via `filePath`, and
-  missing HTTP auth as the real gaps. Fixes queued; do not expose `serve api` beyond
-  loopback meanwhile.
-- **Backup/reset commands** — export landed; `reset` still manual (delete workspace dir).
+- ~~**Contradiction handling**~~ **DONE (2026-08-11)** — packs now flag near-duplicate,
+  non-identical items under `[Contradictions]` (token-Jaccard ≥ 0.6, same type,
+  non-expired; id-deterministic). Schema `ContextPackContradictionV1`, live-verified
+  against the §3 S6 scenario. Tests in `packages/core`.
+- ~~**Secret filtering / prompt-injection safeguards**~~ **DONE (2026-08-11)** —
+  `redactSecrets` in `packages/shared/src/redact.ts` (OpenAI/Anthropic/AWS/GitHub/
+  Slack/Stripe/Google keys, JWTs, private-key blocks, generic key=value secrets),
+  applied at `context add`/`update` and every ingest path. The security report's three
+  findings (SSRF, arbitrary file read, missing auth) were already resolved — status
+  header added to the report.
+- **Backup/reset commands** — **DONE (2026-08-11)**: `context export` (JSON lines),
+  `context import jsonl` (restore, round-trip tested), `context reset --yes` (guarded
+  destructive wipe). `context reset` still requires explicit confirmation; `serve api`
+  stays loopback-only.
+- **MCP lifecycle** — **DONE (2026-08-11)**: reconnect/kill-recovery/persistence tests
+  (`apps/mcp/test/lifecycle.test.ts`).
 
 Canonical rules stay in `AGENTS.md`; ContextSidecar supplies dynamic context + notes.
 
 ## 6. Regression & safety coverage
 
-Coverage now (suite green, 2026-08-10):
+Coverage now (suite green, 2026-08-11 — 61 tests):
 
-- Doctor: native-binding status, exit-code semantics, fresh-workspace score.
-- Export: JSON-lines round-trip (2 new CLI tests; CLI suite 16/16).
+- Doctor: native-binding status, exit-code semantics, fresh-workspace score, Node
+  `engines` compliance check.
+- Export/import/reset: JSON-lines round-trip, reset confirmation guard, DB recovery
+  (corrupted DB → failing doctor + exit 1; missing DB → init recovery).
+- Contradiction detection + secret redaction (core + ingest).
+- MCP lifecycle: consecutive sessions, kill + recovery, persistence across restarts.
+- Deterministic ranking: golden ordering + bit-identical repeats; 1000-item latency.
+- Cross-agent config: hermes, claude-code, openclaw, codex (TOML + JSON).
 - `pnpm adopt` (`scripts/adoption-check.sh`): clean workspace → init → bootstrap →
   add → pack → doctor → real MCP `health_check` — all in one command.
 
 Still missing (next pass):
 
-- MCP lifecycle/reconnect (kill + respawn) tests.
-- Deterministic ranking golden tests.
-- Empty/corrupted DB recovery tests.
-- Secret filtering tests (feature does not exist yet).
-- Large pack latency tests.
-- Cross-agent config generation tests (add codex target coverage).
+- Secret redaction round-trip via MCP/HTTP surfaces (covered at service + ingest level).
+- Pack latency at larger scale (10k items) and concurrency tests.
 
 ## 7. Integration (opt-in, staged)
 

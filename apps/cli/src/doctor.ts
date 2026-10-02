@@ -30,6 +30,12 @@ export interface NativeBindingCheck {
   detail: string | null;
 }
 
+export interface EngineCompliance {
+  required: string | null;
+  satisfied: boolean;
+  detail: string | null;
+}
+
 export interface DoctorReport {
   ok: boolean;
   rootPath: string;
@@ -51,6 +57,7 @@ export interface DoctorReport {
   namespaces: NamespaceHealth[];
   schemaValidation: SchemaValidationResult;
   native: NativeBindingCheck;
+  engines: EngineCompliance;
   healthScore: number;
   recommendations: string[];
 }
@@ -92,6 +99,25 @@ function formatBytes(bytes: number | null): string {
 }
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+
+function checkEngineCompliance(): EngineCompliance {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")) as { engines?: { node?: string } };
+    const required = manifest.engines?.node ?? null;
+    if (!required) return { required: null, satisfied: true, detail: null };
+    const current = Number(process.versions.node.split(".")[0]);
+    const match = required.match(/>=\s*(\d+)/);
+    const minimum = match ? Number(match[1]) : null;
+    if (minimum === null) return { required, satisfied: true, detail: `Unparsable engines constraint: ${required}` };
+    return {
+      required,
+      satisfied: current >= minimum,
+      detail: current >= minimum ? null : `This runtime is Node ${process.version}; the repo requires ${required}. Use the version in .nvmrc.`
+    };
+  } catch {
+    return { required: null, satisfied: true, detail: null };
+  }
+}
 
 function checkNativeBinding(rootPath: string): NativeBindingCheck {
   const candidates = [
@@ -287,6 +313,8 @@ function computeHealthScore(report: DoctorReport): number {
   if (!report.storage.exists) score -= 20;
   // native binding
   if (report.native.status === "error") score -= 30;
+  // engines
+  if (!report.engines.satisfied) score -= 20;
   // integrity
   if (report.storage.integrityStatus === "error") score -= 25;
   if (report.storage.integrityStatus === "unknown") score -= 5;
@@ -309,6 +337,10 @@ function computeHealthScore(report: DoctorReport): number {
 
 function generateRecommendations(report: DoctorReport): string[] {
   const recs: string[] = [];
+
+  if (!report.engines.satisfied && report.engines.detail) {
+    recs.push(`Node version mismatch: ${report.engines.detail} Use \`nvm use\` / \`.nvmrc\` before running anything else.`);
+  }
 
   if (report.native.status === "error") {
     recs.push(
@@ -402,9 +434,10 @@ export function runDoctorDiagnostics(rootPath: string): DoctorReport {
   const now = new Date().toISOString();
 
   const native = checkNativeBinding(String(rootPath));
+  const engines = checkEngineCompliance();
 
   const report: DoctorReport = {
-    ok: integrityResult.status === "ok" && native.status === "ok",
+    ok: integrityResult.status === "ok" && native.status === "ok" && engines.satisfied,
     rootPath,
     node: process.version,
     platform: `${process.platform} ${process.arch}`,
@@ -424,6 +457,7 @@ export function runDoctorDiagnostics(rootPath: string): DoctorReport {
     namespaces: namespaceHealth,
     schemaValidation,
     native,
+    engines,
     healthScore: 100, // placeholder
     recommendations: [],
   };
@@ -456,6 +490,13 @@ export function renderDoctorReport(report: DoctorReport): string {
   } else if (report.native.status === "error") {
     lines.push(`${BOLD}Native Modules${RESET}`);
     lines.push(`  ${RED}${CROSS}${RESET} better-sqlite3: ${report.native.detail}`);
+    lines.push("");
+  }
+
+  // engines
+  if (report.engines.required && !report.engines.satisfied) {
+    lines.push(`${BOLD}Node Version${RESET}`);
+    lines.push(`  ${RED}${CROSS}${RESET} ${report.engines.detail ?? `Requires ${report.engines.required}`}`);
     lines.push("");
   }
 
