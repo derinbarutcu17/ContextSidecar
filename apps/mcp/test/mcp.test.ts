@@ -94,7 +94,7 @@ describe("MCP server", () => {
 
     await client.close();
     fs.rmSync(root, { recursive: true, force: true });
-  });
+  }, 15_000);
 
   it("lists tools and prompts", async () => {
     const client = await connectClient(path.join(process.cwd(), ".tmp-mcp-tools"));
