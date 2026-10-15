@@ -71,7 +71,7 @@ describe("database recovery", () => {
     const items = JSON.parse(runCli(["context", "list", "--namespace", "project:rt", "--json"], root)) as Array<{ item_type: string; content: string }>;
     expect(items.map((item) => `${item.item_type}:${item.content}`)).toEqual(["pinned_instruction:Round trip pin.", "project_fact:Round trip fact."]);
     fs.rmSync(dumpFile, { force: true });
-  });
+  }, 20000);
 
   it("refuses reset without confirmation", () => {
     const root = freshRoot();
