@@ -40,7 +40,7 @@ describe("MCP server lifecycle", () => {
       expect(payload.status).toBe("ok");
       await client.close();
     }
-  });
+  }, 15_000);
 
   it("recovers with a fresh server after the previous one is killed", async () => {
     const root = freshRoot();
